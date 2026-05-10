@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { setupOwner } from '../lib/auth';
 import { translations, type Language } from '../lib/i18n';
 import { motion } from 'motion/react';
-import { LogIn, UserPlus, ShieldCheck, Mail, Lock, User as UserIcon, Zap, AlertTriangle } from 'lucide-react';
+import { LogIn, ShieldCheck, Mail, Lock, User as UserIcon, Zap } from 'lucide-react';
+import BrandLogo from '../../Brandlogo.svg';
+import BrandName from '../../Brandname.svg';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function AuthPage({ lang }: Props) {
-  const { loginAsDemo } = useAuth();
+  const { login, register, loginAsDemo } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,15 +26,11 @@ export default function AuthPage({ lang }: Props) {
     setLoading(true);
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+        await login(email, password);
         toast.success(lang === 'en' ? 'Welcome back!' : 'Karibu tena!');
       } else {
-        await setupOwner(email, password, displayName);
-        toast.success(lang === 'en' ? 'Account created successfully! Please check your email for verification.' : 'Akaunti imeumbwa kikamilifu! Tafadhali kagua barua pepe yako kwa uthibitisho.');
+        await register(email, password, displayName);
+        toast.success(lang === 'en' ? 'Account created successfully!' : 'Akaunti imeumbwa kikamilifu!');
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -62,11 +58,9 @@ export default function AuthPage({ lang }: Props) {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 relative z-10"
       >
-        <div className="flex flex-col items-center mb-10">
-          <div className="h-16 w-16 bg-brand-primary rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 dark:shadow-none mb-6">
-             <div className="h-8 w-8 border-4 border-white rounded-md"></div>
-          </div>
-          <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">DukaSmart</h2>
+<div className="flex flex-col items-center mb-10">
+          <img src={BrandLogo} alt="Mangi" className="h-20 w-20 object-contain mb-4" />
+          <img src={BrandName} alt="Mangi" className="h-8 object-contain mb-2" />
           <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mt-2">{isLogin ? (lang === 'en' ? 'Access your retail intelligence' : 'Fikia akili yako ya biashara') : (lang === 'en' ? 'Register as business owner' : 'Jisajili kama mmiliki wa biashara')}</p>
         </div>
 

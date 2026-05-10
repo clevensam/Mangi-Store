@@ -156,7 +156,7 @@ export default function StockPage({ lang, onViewDetails }: Props) {
 
     let result = products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+      const matchesCategory = categoryFilter === 'all' || p.category.toLowerCase() === categoryFilter.toLowerCase();
       return matchesSearch && matchesCategory;
     });
 

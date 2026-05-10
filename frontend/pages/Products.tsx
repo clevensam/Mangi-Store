@@ -161,13 +161,14 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
 
   const handleDelete = async (id: string) => {
     if (!confirm(lang === 'en' ? 'Are you sure you want to delete this product?' : 'Una uhakika unataka kufuta bidhaa hii?')) return;
-    
+
     try {
       await deleteProduct({ variables: { id } });
       toast.success(lang === 'en' ? 'Product deleted' : 'Bidhaa imefutwa');
       refetch();
     } catch (err: any) {
-      toast.error('Failed to delete product');
+      const message = err?.message || 'Failed to delete product';
+      toast.error(message);
     }
   };
 
@@ -213,7 +214,7 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                   });
                   setShowAdd(true);
                 }}
-                className="h-11 px-6 rounded-xl bg-brand-primary text-white flex items-center gap-2 shadow-lg shadow-orange-100 dark:shadow-none active:scale-95 hover:bg-orange-600 transition-all font-black uppercase tracking-widest text-[10px]"
+                className="h-11 px-6 rounded-xl bg-gradient-brand text-white flex items-center gap-2 shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 hover:bg-gradient-brand-dark transition-all font-black uppercase tracking-widest text-[10px]"
               >
                 <Plus size={18} />
                 {t.addNew}

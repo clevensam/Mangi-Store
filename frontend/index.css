@@ -3,9 +3,20 @@
 @theme {
   --color-brand-primary: #f97316;
   --color-brand-secondary: #0ea5e9;
+  --color-brand-dark: #ea580c;
   
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer utilities {
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  }
+  
+  .bg-gradient-brand-dark {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  }
 }
 
 @layer base {

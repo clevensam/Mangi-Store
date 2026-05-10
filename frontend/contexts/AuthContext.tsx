@@ -1,14 +1,66 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { getUserProfile, UserProfile } from '../lib/auth';
+import { useLazyQuery, useMutation } from '@apollo/client';
+import { client } from '../lib/apollo';
+import { gql } from '@apollo/client';
+
+const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      email
+      displayName
+      role
+      status
+    }
+  }
+`;
+
+const LOGIN_MUTATION = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      user {
+        id
+        email
+        displayName
+        role
+        status
+      }
+    }
+  }
+`;
+
+const REGISTER_MUTATION = gql`
+  mutation Register($email: String!, $password: String!, $displayName: String!) {
+    register(email: $email, password: $password, displayName: $displayName) {
+      token
+      user {
+        id
+        email
+        displayName
+        role
+        status
+      }
+    }
+  }
+`;
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'owner' | 'staff';
+  status: 'active' | 'inactive';
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null;
   profile: UserProfile | null;
   loading: boolean;
   isOwner: boolean;
   isGuest: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
   loginAsDemo: () => void;
   signOut: () => Promise<void>;
 }
@@ -19,6 +71,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isOwner: false,
   isGuest: false,
+  login: async () => {},
+  register: async () => {},
   loginAsDemo: () => {},
   signOut: async () => {},
 });
@@ -26,20 +80,35 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
 
+  const [getMe] = useLazyQuery(ME_QUERY, {
+    client,
+    fetchPolicy: 'network-only',
+  });
+
+  const [loginMutation] = useMutation(LOGIN_MUTATION, { client });
+  const [registerMutation] = useMutation(REGISTER_MUTATION, { client });
+
   useEffect(() => {
-    // Check active sessions and subscribe to auth changes
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          const userProfile = await getUserProfile(session.user.id);
-          setProfile(userProfile);
+        const tokenMatch = document.cookie.match(/auth_token=([^;]+)/);
+        if (tokenMatch) {
+          const { data } = await getMe();
+          if (data?.me) {
+            setUser({ id: data.me.id, email: data.me.email });
+            setProfile({
+              uid: data.me.id,
+              email: data.me.email,
+              displayName: data.me.displayName,
+              role: data.me.role,
+              status: data.me.status
+            });
+          }
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -49,24 +118,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkUser();
+  }, [getMe]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isDemo) {
-        const currentUser = session?.user || null;
-        setUser(currentUser);
-        
-        if (currentUser) {
-          const userProfile = await getUserProfile(currentUser.id);
-          setProfile(userProfile);
-        } else {
-          setProfile(null);
-        }
-      }
-      setLoading(false);
+  const login = async (email: string, password: string) => {
+    const { data } = await loginMutation({
+      variables: { email, password },
+      context: { credentials: 'include' }
     });
 
-    return () => subscription.unsubscribe();
-  }, [isDemo]);
+    if (data?.login) {
+      setUser({ id: data.login.user.id, email: data.login.user.email });
+      setProfile({
+        uid: data.login.user.id,
+        email: data.login.user.email,
+        displayName: data.login.user.displayName,
+        role: data.login.user.role,
+        status: data.login.user.status
+      });
+    }
+  };
+
+  const register = async (email: string, password: string, displayName: string) => {
+    const { data } = await registerMutation({
+      variables: { email, password, displayName },
+      context: { credentials: 'include' }
+    });
+
+    if (data?.register) {
+      setUser({ id: data.register.user.id, email: data.register.user.email });
+      setProfile({
+        uid: data.register.user.id,
+        email: data.register.user.email,
+        displayName: data.register.user.displayName,
+        role: data.register.user.role,
+        status: data.register.user.status
+      });
+    }
+  };
 
   const loginAsDemo = () => {
     setIsDemo(true);
@@ -79,21 +167,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setProfile(null);
     } else {
-      await supabase.auth.signOut();
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch (e) {
+        console.error('Logout error:', e);
+      }
+      setUser(null);
+      setProfile(null);
+      document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
   };
 
   const value = {
-    user: isDemo ? ({ 
-      id: 'demo-user', 
-      email: 'demo@duka.smart',
-      role: 'authenticated',
-      aud: 'authenticated',
-    } as any) : user,
-    profile: isDemo ? ({ uid: 'demo-user', email: 'demo@duka.smart', displayName: 'Demo Manager', role: 'owner', status: 'active' } as any) : profile,
+    user: isDemo ? ({ id: 'demo-user', email: 'demo@duka.smart' } as any) : user,
+    profile: isDemo ? ({ uid: 'demo-user', email: 'demo@duka.smart', displayName: 'Demo Manager', role: 'owner' as const, status: 'active' as const } as any) : profile,
     loading: loading && !isDemo,
     isOwner: isDemo || profile?.role === 'owner',
     isGuest: isDemo,
+    login,
+    register,
     loginAsDemo,
     signOut
   };
@@ -102,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={value}>
       {loading && !isDemo ? (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-          <div className="h-10 w-10 border-4 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
+          <div className="h-10 w-10 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
         </div>
       ) : (
         children

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Sun, Moon, Globe, ChevronLeft, ChevronRight, CreditCard, Users, ShieldAlert, BarChart3, Settings, Search, Bell, LogIn } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Sun, Moon, Globe, ChevronLeft, ChevronRight, ChevronDown, CreditCard, Users, ShieldAlert, BarChart3, Settings, Search, Bell, LogIn } from 'lucide-react';
+import BrandLogo from '../Brandlogo.svg';
+import BrandName from '../Brandname.svg';
 import { cn } from './lib/utils';
 import { translations, type Language } from './lib/i18n';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,6 +15,7 @@ import ProductsPage from './pages/Products';
 import ExpensesPage from './pages/Expenses';
 import DebtsPage from './pages/Debts';
 import FraudPage from './pages/Fraud';
+import CustomersPage from './pages/Customers';
 import SettingsPage from './pages/Settings';
 import ReportsPage from './pages/Reports';
 import ProductDetailsPage from './pages/ProductDetails';
@@ -38,6 +41,7 @@ export default function App() {
 
   const navGroups = [
     {
+      id: 'main',
       title: lang === 'en' ? 'Main' : 'Kuu',
       items: [
         { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
@@ -46,6 +50,7 @@ export default function App() {
       ]
     },
     {
+      id: 'inventory',
       title: lang === 'en' ? 'Inventory' : 'Hesabu',
       items: [
         { id: 'products', label: t.products, icon: Package },
@@ -54,13 +59,16 @@ export default function App() {
       ]
     }, 
     {
+      id: 'management',
       title: lang === 'en' ? 'Management' : 'Usimamizi',
       items: [
         { id: 'debts', label: t.debts, icon: CreditCard },
+        { id: 'customers', label: t.customers, icon: Users },
         { id: 'fraud', label: t.fraud, icon: ShieldAlert },
       ]
     },
     {
+      id: 'system',
       title: lang === 'en' ? 'System' : 'Mfumo',
       items: [
         { id: 'settings', label: t.settings, icon: Settings },
@@ -88,6 +96,7 @@ export default function App() {
       case 'stock': return <StockPage lang={lang} onViewDetails={setSelectedProductId} />;
       case 'expenses': return <ExpensesPage lang={lang} />;
       case 'debts': return <DebtsPage lang={lang} />;
+      case 'customers': return <CustomersPage lang={lang} />;
       case 'fraud': return <FraudPage lang={lang} />;
       case 'reports': return <ReportsPage lang={lang} />;
       case 'settings': return <SettingsPage lang={lang} />;
@@ -110,17 +119,15 @@ export default function App() {
           "h-20 flex items-center border-b border-slate-50 dark:border-slate-800 transition-all duration-300",
           "px-5"
         )}>
-          <div className="h-10 w-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-orange-100 shrink-0">
-             <div className="h-5 w-5 border-2 border-white rounded-sm"></div>
-          </div>
+<img src={BrandLogo} alt="Mangi" className="h-10 w-10 object-contain shrink-0" />
           {!isCollapsed && (
-            <motion.span 
+            <motion.img 
               initial={{ opacity: 0, x: -10 }} 
               animate={{ opacity: 1, x: 0 }} 
-              className="ml-4 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
-            >
-              DukaSmart
-            </motion.span>
+              src={BrandName}
+              alt="Mangi"
+              className="h-6 object-contain"
+            />
           )}
         </div>
 
@@ -186,12 +193,10 @@ export default function App() {
         <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex h-20 items-center justify-between px-8 shrink-0 relative z-30 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)] transition-colors duration-300">
           {/* Left: Brand/Context */}
           <div className="flex items-center gap-4">
-             <div className="md:hidden h-9 w-9 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-orange-100">
-               <div className="h-4 w-4 border-2 border-white rounded-sm"></div>
-            </div>
+<img src={BrandLogo} alt="Mangi" className="md:hidden h-9 w-9 object-contain" />
             {activeTab === 'dashboard' && (
               <h1 className="text-2xl font-black text-[#1E293B] dark:text-slate-100 tracking-tight font-sans">
-                {allNavItems.find(n => n.id === activeTab)?.label || 'DukaSmart'}
+                {allNavItems.find(n => n.id === activeTab)?.label || 'Mangi'}
               </h1>
             )}
           </div>
@@ -279,26 +284,33 @@ export default function App() {
         </main>
 
         {/* Bottom Navigation (Mobile Only) */}
-        <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-[2rem] flex items-center shrink-0 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-40 overflow-x-auto no-scrollbar gap-2 transition-colors duration-300">
-          {allNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-3 px-4 rounded-2xl transition-all duration-300 min-w-[70px] shrink-0",
-                  isActive ? "text-brand-primary bg-orange-50 dark:bg-orange-950/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-                )}
-              >
-                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={cn("text-[9px] font-black uppercase tracking-[0.1em] whitespace-nowrap", isActive ? "opacity-100" : "opacity-60")}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
+        <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-[2rem] flex items-center shrink-0 shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-40 overflow-x-auto no-scrollbar gap-1 transition-colors duration-300">
+          {navGroups.map((group, groupIdx) => (
+            <React.Fragment key={group.id}>
+              {groupIdx > 0 && (
+                <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 shrink-0 mx-1" />
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id || (activeTab.startsWith(item.id + '-'));
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-1 py-3 px-3 rounded-2xl transition-all duration-300 min-w-[60px] shrink-0",
+                      isActive ? "text-brand-primary bg-orange-50 dark:bg-orange-950/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    )}
+                  >
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    <span className={cn("text-[8px] font-black uppercase tracking-[0.1em] whitespace-nowrap", isActive ? "opacity-100" : "opacity-60")}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </React.Fragment>
+          ))}
         </nav>
       </div>
     </div>
