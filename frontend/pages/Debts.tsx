@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
-import { Plus, CreditCard, User, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, X, Save, ChevronRight, ArrowRightLeft } from 'lucide-react';
+import { Plus, CreditCard, User, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, X, Save, ChevronRight, ArrowRightLeft, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const GET_DEBTS = gql`
@@ -95,6 +95,7 @@ export default function DebtsPage({ lang }: Props) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     customerId: '',
     supplierName: '',
@@ -116,6 +117,15 @@ export default function DebtsPage({ lang }: Props) {
 
   const debts = debtsData?.debts as Debt[] || [];
   const customers = customersData?.customers as Customer[] || [];
+
+  const filteredDebts = useMemo(() => {
+    return debts.filter(debt => {
+      const searchLower = searchTerm.toLowerCase();
+      const customerName = debt.customer?.name?.toLowerCase() || '';
+      const supplierName = debt.supplierName?.toLowerCase() || '';
+      return customerName.includes(searchLower) || supplierName.includes(searchLower);
+    });
+  }, [debts, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -292,11 +302,24 @@ export default function DebtsPage({ lang }: Props) {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800">
+              <div className="relative max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder={t.searchDebt || (lang === 'en' ? 'Search by name...' : 'Tafuta kwa jina...')}
+                  className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
             {debtsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
               </div>
-            ) : debts.length === 0 ? (
+            ) : filteredDebts.length === 0 ? (
               <div className="py-20 text-center">
                 <div className="inline-flex p-6 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-300 dark:text-slate-700 mb-4">
                   <CreditCard size={48} />
@@ -322,7 +345,7 @@ export default function DebtsPage({ lang }: Props) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                    {debts.map((debt) => {
+                    {filteredDebts.map((debt) => {
                       const daysInfo = getDaysInfo(debt.dueDate);
                       const statusInfo = getStatusBadge(debt.status);
                       const StatusIcon = statusInfo.icon;
