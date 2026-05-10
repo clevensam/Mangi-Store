@@ -7,7 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@apollo/server/express4";
+import { expressMiddleware } from "@as-integrations/express4";
 import bodyParser from "body-parser";
 import { typeDefs } from "./graphql/typeDefs";
 import { authResolvers } from "./graphql/resolvers/auth";
