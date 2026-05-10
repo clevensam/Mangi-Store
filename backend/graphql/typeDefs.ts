@@ -108,7 +108,7 @@ export const productTypeDefs = `#graphql
 
   type Query {
     products: [Product!]!
-    sales: [Sale!]!
+    sales(startDate: String, endDate: String): [Sale!]!
     product(id: ID!): Product
     productSales(productId: ID!): [Sale!]
   }
@@ -152,4 +152,115 @@ export const operatingExpenseTypeDefs = `#graphql
   }
 `;
 
-export const typeDefs = `${authTypeDefs}\n${customerTypeDefs}\n${debtTypeDefs}\n${productTypeDefs}\n${operatingExpenseTypeDefs}`;
+export const analysisTypeDefs = `#graphql
+  type SalesAnalysis {
+    totalRevenue: Float!
+    totalCost: Float!
+    grossProfit: Float!
+    profitMargin: Float!
+    transactionCount: Int!
+    averageTransactionValue: Float!
+  }
+
+  type DeadStockItem {
+    productId: ID!
+    productName: String!
+    quantity: Int!
+    category: String!
+    lastSaleDate: String
+    daysSinceLastSale: Int
+  }
+
+  type ProfitabilityItem {
+    productId: ID!
+    productName: String!
+    category: String!
+    revenue: Float!
+    cost: Float!
+    profit: Float!
+    marginPercent: Float!
+    unitsSold: Int!
+  }
+
+  type ProductHealth {
+    productId: ID!
+    productName: String!
+    category: String!
+    quantity: Int!
+    threshold: Int!
+  }
+
+  type InventoryHealth {
+    lowStock: [ProductHealth!]!
+    overstocked: [ProductHealth!]!
+    outOfStock: [ProductHealth!]!
+    inventoryValue: Float!
+    potentialProfit: Float!
+  }
+
+  type BusinessInsight {
+    topRevenueProducts: [ProfitabilityItem!]!
+    topProfitProducts: [ProfitabilityItem!]!
+    worstMarginProducts: [ProfitabilityItem!]!
+  }
+
+  type Query {
+    salesAnalysis(startDate: String, endDate: String): SalesAnalysis
+    deadStockAnalysis(startDate: String, endDate: String): [DeadStockItem!]!
+    profitabilityAnalysis(startDate: String, endDate: String): [ProfitabilityItem!]!
+    inventoryHealth: InventoryHealth
+    businessInsights(startDate: String, endDate: String): BusinessInsight
+  }
+`;
+
+export const dashboardTypeDefs = `#graphql
+  type DashboardStats {
+    todaySales: Float!
+    todayOrderCount: Int!
+    lowStockCount: Int!
+    inventoryValue: Float!
+  }
+
+  type DailySales {
+    date: String!
+    total: Float!
+  }
+
+  type ProductSummary {
+    productId: ID!
+    productName: String!
+    revenue: Float!
+    quantity: Int!
+  }
+
+  type Transaction {
+    id: ID!
+    productId: ID!
+    productName: String!
+    quantity: Int!
+    totalPrice: Float!
+    createdAt: String!
+  }
+
+  type LowStockProduct {
+    productId: ID!
+    productName: String!
+    quantity: Int!
+    threshold: Int!
+    category: String!
+  }
+
+  type DashboardData {
+    stats: DashboardStats!
+    weeklySales: [DailySales!]!
+    topProducts: [ProductSummary!]!
+    recentTransactions: [Transaction!]!
+    lowStockProducts: [LowStockProduct!]!
+  }
+
+  type Query {
+    dashboardData: DashboardData!
+  }
+`;
+
+export const typeDefs = `${authTypeDefs}\n${customerTypeDefs}\n${debtTypeDefs}\n${productTypeDefs}\n${operatingExpenseTypeDefs}\n${analysisTypeDefs}\n${dashboardTypeDefs}`;

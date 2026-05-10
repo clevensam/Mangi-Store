@@ -15,6 +15,8 @@ import { productResolvers } from "./graphql/resolvers/products";
 import { customerResolvers } from "./graphql/resolvers/customers";
 import { debtResolvers } from "./graphql/resolvers/debts";
 import { expenseResolvers } from "./graphql/resolvers/expenses";
+import { analysisResolvers } from "./graphql/resolvers/analysis";
+import { dashboardResolvers } from "./graphql/resolvers/dashboard";
 import { createContext } from "./auth/context";
 import { errorHandler } from "./middleware/errorHandler";
 
@@ -48,7 +50,9 @@ const resolvers = {
     ...productResolvers.Query,
     ...customerResolvers.Query,
     ...debtResolvers.Query,
-    ...expenseResolvers.Query
+    ...expenseResolvers.Query,
+    ...analysisResolvers.Query,
+    ...dashboardResolvers.Query
   },
   Mutation: {
     ...authResolvers.Mutation,

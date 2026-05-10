@@ -15,9 +15,23 @@ export const productResolvers = {
         created_at: p.created_at
       }));
     },
-    sales: async () => {
+    sales: async (_: any, { startDate, endDate }: any) => {
       const sales = await saleRepository.getAll();
-      return sales.map(s => ({
+      let filtered = sales;
+      
+      if (startDate || endDate) {
+        filtered = sales.filter((s: any) => {
+          const saleDate = new Date(s.created_at);
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate) : null;
+          
+          if (start && saleDate < start) return false;
+          if (end && saleDate > end) return false;
+          return true;
+        });
+      }
+      
+      return filtered.map((s: any) => ({
         id: s.id,
         product_id: s.product_id,
         quantity: s.quantity,
@@ -52,6 +66,10 @@ export const productResolvers = {
   },
   Mutation: {
     createProduct: async (_: any, args: any) => {
+      const { buying_price, selling_price } = args;
+      if (selling_price !== undefined && buying_price !== undefined && selling_price <= buying_price) {
+        throw new Error('Selling price must be greater than buying price');
+      }
       const product = await productRepository.create(args);
       return {
         id: product.id,
@@ -65,6 +83,10 @@ export const productResolvers = {
       };
     },
     updateProduct: async (_: any, { id, ...updates }: any) => {
+      const { buying_price, selling_price } = updates;
+      if (selling_price !== undefined && buying_price !== undefined && selling_price <= buying_price) {
+        throw new Error('Selling price must be greater than buying price');
+      }
       const product = await productRepository.update(id, updates);
       return {
         id: product.id,

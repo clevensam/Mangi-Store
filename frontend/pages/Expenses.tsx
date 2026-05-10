@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
@@ -310,7 +311,7 @@ export default function ExpensesPage({ lang }: Props) {
 
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="h-8 w-8 border-3 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
+                <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
               </div>
             ) : filteredExpenses.length === 0 ? (
               <div className="py-20 text-center">

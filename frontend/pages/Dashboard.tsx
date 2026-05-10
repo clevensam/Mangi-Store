@@ -2,227 +2,432 @@ import React, { useMemo } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
-import { TrendingUp, AlertTriangle, ArrowRight, PackageOpen, Activity } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { 
+  TrendingUp, TrendingDown, Package, DollarSign, 
+  ShoppingCart, Plus, Receipt, BarChart3, Clock,
+  AlertTriangle, PackagePlus, ArrowRight
+} from 'lucide-react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 
 const GET_DASHBOARD_DATA = gql`
   query GetDashboardData {
-    products {
-      id
-      name
-      quantity
-      low_stock_threshold
-      selling_price
-    }
-    sales {
-      id
-      product_id
-      quantity
-      total_price
-      created_at
+    dashboardData {
+      stats {
+        todaySales
+        todayOrderCount
+        lowStockCount
+        inventoryValue
+      }
+      weeklySales {
+        date
+        total
+      }
+      topProducts {
+        productId
+        productName
+        revenue
+        quantity
+      }
+      recentTransactions {
+        id
+        productId
+        productName
+        quantity
+        totalPrice
+        createdAt
+      }
+      lowStockProducts {
+        productId
+        productName
+        quantity
+        threshold
+        category
+      }
     }
   }
 `;
 
-interface Product {
-  id: string;
-  name: string;
-  quantity: number;
-  low_stock_threshold: number;
-  selling_price: number;
+interface DashboardStats {
+  todaySales: number;
+  todayOrderCount: number;
+  lowStockCount: number;
+  inventoryValue: number;
 }
 
-interface Sale {
-  id: string;
-  product_id: string;
+interface DailySales {
+  date: string;
+  total: number;
+}
+
+interface TopProduct {
+  productId: string;
+  productName: string;
+  revenue: number;
   quantity: number;
-  total_price: number;
-  created_at: string;
+}
+
+interface Transaction {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+interface LowStockProduct {
+  productId: string;
+  productName: string;
+  quantity: number;
+  threshold: number;
+  category: string;
+}
+
+interface DashboardData {
+  stats: DashboardStats;
+  weeklySales: DailySales[];
+  topProducts: TopProduct[];
+  recentTransactions: Transaction[];
+  lowStockProducts: LowStockProduct[];
 }
 
 interface Props {
   lang: Language;
+  onNavigate?: (tab: string) => void;
 }
 
-export default function DashboardPage({ lang }: Props) {
+export default function DashboardPage({ lang, onNavigate }: Props) {
   const t = translations[lang];
+  const { profile } = useAuth();
   const { loading, data } = useQuery(GET_DASHBOARD_DATA);
 
-  const products = data?.products as Product[] || [];
-  const sales = data?.sales as Sale[] || [];
+  const dashboardData = data?.dashboardData as DashboardData | undefined;
 
-  const totals = { business: 0, drawings: 0 };
-  
-  const totalSalesToday = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return sales
-      .filter(s => s.created_at.startsWith(today))
-      .reduce((sum, s) => sum + s.total_price, 0);
-  }, [sales]);
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t.goodMorning;
+    if (hour < 18) return t.goodAfternoon;
+    return t.goodEvening;
+  }, [t]);
 
-  const highTurnoverItems = products.filter(p => p.quantity < 20); // Simple logic for demo
-  const lowStockItems = products.filter(p => p.quantity <= p.low_stock_threshold);
-  
-  const healthScore = totalSalesToday > 50000 ? 'good' : totalSalesToday > 0 ? 'neutral' : 'warning';
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
 
-  const chartData = [
-    { name: 'Mon', total: 4000 },
-    { name: 'Tue', total: 3000 },
-    { name: 'Wed', total: 2000 },
-    { name: 'Thu', total: 2780 },
-    { name: 'Fri', total: 1890 },
-    { name: 'Sat', total: 2390 },
-    { name: 'Sun', total: totalSalesToday || 1200 },
-  ];
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <LoadingSpinner size={60} thickness={180} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative overflow-y-auto pb-20 transition-colors duration-300">
-      <div className="pt-8 px-8 pb-0 shrink-0">
+    <div className="flex flex-col h-full min-h-0 bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
+      <div className="pt-6 px-8 pb-4 shrink-0">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t.dashboard}</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.overviewPerformance}</p>
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-brand-primary to-orange-500 rounded-2xl p-6 shadow-lg shadow-orange-200/50 dark:shadow-none relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  {greeting}, {profile?.displayName || 'User'}!
+                </h1>
+                <p className="text-white/80 font-medium mt-1 text-sm">
+                  {getCurrentDate()}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => onNavigate?.('sales')}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white text-brand-primary rounded-xl font-bold text-sm transition-all shadow-lg shadow-black/10 hover:scale-105 active:scale-95"
+                >
+                  <Plus size={16} />
+                  {t.newSale}
+                </button>
+                <button 
+                  onClick={() => onNavigate?.('products')}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold text-sm transition-all backdrop-blur-sm hover:scale-105 active:scale-95"
+                >
+                  <PackagePlus size={16} />
+                  {t.addProduct}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="pt-4 px-8 space-y-6">
-        {/* Health Score Banner */}
-      <div className={cn(
-        "p-4 rounded-2xl flex items-center justify-between border shadow-sm transition-all",
-        healthScore === 'good' ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900 text-emerald-800 dark:text-emerald-400" :
-        healthScore === 'neutral' ? "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900 text-amber-800 dark:text-amber-400" :
-        "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900 text-rose-800 dark:text-rose-400"
-      )}>
-        <div className="flex items-center gap-3">
-          {healthScore !== 'warning' ? <TrendingUp size={18} /> : <AlertTriangle size={18} />}
-          <span className="font-bold text-sm tracking-tight">
-            {healthScore === 'good' ? t.businessGrowing : t.noSalesToday}
-          </span>
-        </div>
-        <div className="h-6 w-6 rounded-full bg-white/50 dark:bg-slate-800/50 flex items-center justify-center">
-          <ArrowRight size={14} />
-        </div>
-      </div>
-
-      {/* Primary Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat-card">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-orange-50 dark:bg-orange-950/30 text-brand-primary rounded-lg">
-              <TrendingUp size={16} />
-            </div>
-            {highTurnoverItems.length > 0 && (
-              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md tracking-tighter transition-all">
-                {t.highTurnover}
-              </span>
-            )}
-          </div>
-          <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.15em] mb-1">{t.turnoverRate}</p>
-          <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-none">{lowStockItems.length} {t.all}</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg">
-              <PackageOpen size={16} />
-            </div>
-          </div>
-          <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.15em] mb-1">{t.deadStock}</p>
-          <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-none">0</p>
-        </div>
-
-        {/* Financial Discipline Card */}
-        <div className="stat-card">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 rounded-lg">
-              <Activity size={16} />
-            </div>
-            <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-md tracking-tighter uppercase">{t.financialDiscipline}</span>
-          </div>
-          <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.15em] mb-1">{t.drawings}</p>
-          <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-none">{formatCurrency(totals.drawings)}</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-lg">
-              <TrendingUp size={16} />
-            </div>
-            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md tracking-tighter uppercase whitespace-nowrap">{t.profit}</span>
-          </div>
-          <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.15em] mb-1">{t.business}</p>
-          <p className="text-2xl font-bold tracking-tight text-emerald-600 leading-none">{formatCurrency(totalSalesToday * 0.2 - totals.business)}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Analytics Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-6 transition-colors duration-300">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.reports}</h3>
-            <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-lg text-[10px] font-bold">
-              <button className="px-3 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-md uppercase tracking-wider text-slate-800 dark:text-slate-100">{t.weekly}</button>
-              <button className="px-3 py-1.5 text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.monthly}</button>
-            </div>
-          </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
-                <XAxis dataKey="name" hide />
-                <Tooltip 
-                  cursor={{stroke: '#F97316', strokeWidth: 1}}
-                  contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    backgroundColor: 'var(--tooltip-bg, #1e293b)',
-                    color: 'var(--tooltip-text, #f8fafc)',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.2)', 
-                    fontSize: '12px', 
-                    fontWeight: 'bold' 
-                  }}
-                  itemStyle={{ color: 'inherit' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="total" 
-                  stroke="#F97316" 
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorTotal)"
-                  dot={{ r: 4, fill: '#fff', stroke: '#F97316', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-between px-4 text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest leading-loose">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-          </div>
-        </div>
-
-        {/* Recent Actions / Audit Log */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-6 flex flex-col h-full transition-colors duration-300">
-          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.recentActions}</h3>
-          <div className="space-y-6 flex-1 overflow-y-auto pr-1 no-scrollbar">
-            {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="flex items-start group cursor-pointer">
-                <div className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary transition-colors duration-300">
-                  <PackageOpen size={18} />
+      <div className="px-8 pb-4 shrink-0">
+        <div className="max-w-7xl mx-auto">
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-xl">
+                  <DollarSign size={20} />
                 </div>
-                <div className="ml-4 space-y-0.5 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Added {25 * i}x Milk 1L</p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">10:45 AM • AlexSterling</p>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
+                  {t.todaysSales}
+                </span>
+              </div>
+              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                {formatCurrency(dashboardData?.stats.todaySales || 0)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                {dashboardData?.stats.todayOrderCount || 0} {lang === 'en' ? 'orders' : 'maagizo'}
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 rounded-xl">
+                  <ShoppingCart size={20} />
                 </div>
               </div>
-            ))}
+              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                {dashboardData?.stats.todayOrderCount || 0}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                {t.todaysOrders}
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className={cn(
+                  "p-2.5 rounded-xl",
+                  (dashboardData?.stats.lowStockCount || 0) > 0 
+                    ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600" 
+                    : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600"
+                )}>
+                  <AlertTriangle size={20} />
+                </div>
+              </div>
+              <p className={cn(
+                "text-2xl font-black tracking-tight",
+                (dashboardData?.stats.lowStockCount || 0) > 0 
+                  ? "text-amber-600 dark:text-amber-400" 
+                  : "text-slate-900 dark:text-slate-100"
+              )}>
+                {dashboardData?.stats.lowStockCount || 0}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                {t.productsLowStock}
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-purple-50 dark:bg-purple-950/30 text-purple-600 rounded-xl">
+                  <Package size={20} />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                {formatCurrency(dashboardData?.stats.inventoryValue || 0)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                {t.inventoryValue}
+              </p>
+            </div>
           </div>
         </div>
       </div>
+
+      <div className="flex-1 overflow-y-auto px-8 pb-8 no-scrollbar">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Sales Chart */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.salesTrend}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-lg">
+                    <TrendingUp size={14} />
+                    {lang === 'en' ? 'Last 7 days' : 'Siku 7 zilizopita'}
+                  </span>
+                </div>
+              </div>
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dashboardData?.weeklySales || []}>
+                    <defs>
+                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F97316" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={10} />
+                    <Tooltip 
+                      cursor={{stroke: '#F97316', strokeWidth: 1, strokeDasharray: '4 4'}}
+                      contentStyle={{ 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        backgroundColor: '#1e293b',
+                        color: '#f8fafc',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)', 
+                        fontSize: '12px', 
+                        fontWeight: 'bold' 
+                      }}
+                      formatter={(value: number) => [formatCurrency(value), 'Sales']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="total" 
+                      stroke="#F97316" 
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#colorSales)"
+                      dot={{ r: 4, fill: '#fff', stroke: '#F97316', strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: '#F97316', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Products */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.topProducts}</h3>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {lang === 'en' ? 'By Revenue' : 'Kwa Mapato'}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {(dashboardData?.topProducts || []).length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                    <Package size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">{lang === 'en' ? 'No sales yet' : 'Hakuna mauzo bado'}</p>
+                  </div>
+                ) : (
+                  (dashboardData?.topProducts || []).map((product, index) => (
+                    <div key={product.productId} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black",
+                        index === 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400" :
+                        index === 1 ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" :
+                        index === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" :
+                        "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">
+                          {product.productName}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {product.quantity} {lang === 'en' ? 'units sold' : 'vipande'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-brand-primary text-sm">
+                          {formatCurrency(product.revenue)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Transactions */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.recentTransactions}</h3>
+                <button className="text-xs font-bold text-brand-primary hover:underline flex items-center gap-1">
+                  {lang === 'en' ? 'View All' : 'Tazama Zote'}
+                  <ArrowRight size={12} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {(dashboardData?.recentTransactions || []).length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                    <Clock size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">{t.noRecentTransactions}</p>
+                  </div>
+                ) : (
+                  (dashboardData?.recentTransactions || []).map((transaction) => (
+                    <div key={transaction.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
+                      <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 text-brand-primary flex items-center justify-center">
+                        <ShoppingCart size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                          {transaction.productName}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <Clock size={10} />
+                          {formatTime(transaction.createdAt)} • {transaction.quantity} {lang === 'en' ? 'units' : 'vipande'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-slate-900 dark:text-slate-100 text-sm">
+                          {formatCurrency(transaction.totalPrice)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Low Stock Alerts */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t.lowStockAlerts}</h3>
+                {(dashboardData?.lowStockProducts?.length || 0) > 0 && (
+                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full">
+                    {(dashboardData?.lowStockProducts?.length || 0)} {lang === 'en' ? 'items' : 'vitu'}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-3">
+                {(dashboardData?.lowStockProducts || []).length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                    <TrendingUp size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">{t.noLowStockAlerts}</p>
+                  </div>
+                ) : (
+                  (dashboardData?.lowStockProducts || []).map((product) => (
+                    <div key={product.productId} className="flex items-center gap-4 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                      <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+                        <AlertTriangle size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
+                          {product.productName}
+                        </p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                          {product.quantity} / {product.threshold} {lang === 'en' ? 'remaining' : 'imebaki'}
+                        </p>
+                      </div>
+                      <button className="text-xs font-bold text-brand-primary hover:underline">
+                        {t.restock}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Sun, Moon, Globe, ChevronLeft, ChevronRight, ChevronDown, CreditCard, Users, ShieldAlert, BarChart3, Settings, Search, Bell, LogIn } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight, ChevronDown, CreditCard, Users, ShieldAlert, BarChart3, Settings, Search, Bell, LogIn, BrainCircuit } from 'lucide-react';
 import BrandLogo from '../Brandlogo.svg';
 import BrandName from '../Brandname.svg';
 import { cn } from './lib/utils';
 import { translations, type Language } from './lib/i18n';
 import { motion, AnimatePresence } from 'motion/react';
-import { ModeToggle } from './components/mode-toggle';
 import { useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/Auth';
 import DashboardPage from './pages/Dashboard';
@@ -18,10 +17,11 @@ import FraudPage from './pages/Fraud';
 import CustomersPage from './pages/Customers';
 import SettingsPage from './pages/Settings';
 import ReportsPage from './pages/Reports';
+import AnalysisPage from './pages/Analysis';
 import ProductDetailsPage from './pages/ProductDetails';
 
 export default function App() {
-  const { user, profile, loading, isOwner, isGuest, signOut } = useAuth();
+  const { user, profile, loading, isOwner, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -46,7 +46,8 @@ export default function App() {
       items: [
         { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
         { id: 'sales', label: t.sales, icon: ShoppingCart },
-        { id: 'reports', label: t.reports, icon: BarChart3 },
+        { id: 'reports', label: t.hesabu, icon: BarChart3 },
+        { id: 'analysis', label: t.analysis, icon: BrainCircuit },
       ]
     },
     {
@@ -90,7 +91,7 @@ export default function App() {
     }
 
     switch (activeTab) {
-      case 'dashboard': return <DashboardPage lang={lang} />;
+      case 'dashboard': return <DashboardPage lang={lang} onNavigate={setActiveTab} />;
       case 'sales': return <SalesPage lang={lang} />;
       case 'products': return <ProductsPage lang={lang} onViewDetails={setSelectedProductId} />;
       case 'stock': return <StockPage lang={lang} onViewDetails={setSelectedProductId} />;
@@ -99,6 +100,7 @@ export default function App() {
       case 'customers': return <CustomersPage lang={lang} />;
       case 'fraud': return <FraudPage lang={lang} />;
       case 'reports': return <ReportsPage lang={lang} />;
+      case 'analysis': return <AnalysisPage lang={lang} />;
       case 'settings': return <SettingsPage lang={lang} />;
       default: return <DashboardPage lang={lang} />;
     }
@@ -216,14 +218,13 @@ export default function App() {
           {/* Right: Actions & User */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 mr-2">
-              <ModeToggle className="mr-2" />
-              
               <button 
                 onClick={() => setLang(lang === 'en' ? 'sw' : 'en')}
-                className="h-10 px-4 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
+                className="h-10 px-3 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 text-sm font-bold"
+                title={lang === 'en' ? 'Switch to Swahili' : 'Switch to English'}
               >
-                <Globe size={16} />
-                {lang === 'en' ? 'En' : 'Sw'}
+                <span className="text-lg">{lang === 'en' ? '🇬🇧' : '🇹🇿'}</span>
+                <span className="uppercase tracking-wider">{lang === 'en' ? 'EN' : 'SW'}</span>
               </button>
               
               <button className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-brand-primary transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600 relative group">
@@ -242,10 +243,10 @@ export default function App() {
             <div className="flex items-center gap-3 pl-4 border-l border-slate-100 dark:border-slate-800">
                <div className="text-right hidden sm:block">
                  <p className="text-sm font-black text-slate-900 dark:text-slate-100 leading-none">
-                   {isGuest ? (lang === 'en' ? 'Guest Explorer' : 'Mgeni Mdadisi') : (profile?.displayName || 'User')}
+                   {profile?.displayName || 'User'}
                  </p>
                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                   {isGuest ? (lang === 'en' ? 'Quick Access' : 'Ufikiaji Haraka') : (profile?.role === 'owner' ? t.owner : (lang === 'en' ? 'Staff' : 'Mfanyakazi'))}
+                   {profile?.role === 'owner' ? t.owner : (lang === 'en' ? 'Staff' : 'Mfanyakazi')}
                  </p>
                </div>
                <button 
@@ -254,7 +255,7 @@ export default function App() {
                  title="Sign Out"
                >
                  <img 
-                   src={`https://ui-avatars.com/api/?name=${isGuest ? 'Guest' : (profile?.displayName || 'User')}&background=random`} 
+                   src={`https://ui-avatars.com/api/?name=${profile?.displayName || 'User'}&background=random`} 
                    alt="User avatar"
                    className="h-full w-full object-cover group-hover:opacity-20 transition-opacity"
                    referrerPolicy="no-referrer"

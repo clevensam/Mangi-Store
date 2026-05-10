@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useQuery, gql } from '@apollo/client';
 import { translations, Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
@@ -94,7 +95,7 @@ export default function ProductDetailsPage({ lang, productId, onBack }: Props) {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="h-8 w-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
       </div>
     );
   }

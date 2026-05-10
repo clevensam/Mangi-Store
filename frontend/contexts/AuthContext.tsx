@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useLazyQuery, useMutation } from '@apollo/client';
 import { client } from '../lib/apollo';
 import { gql } from '@apollo/client';
@@ -58,10 +59,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isOwner: boolean;
-  isGuest: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
-  loginAsDemo: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -70,10 +69,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isOwner: false,
-  isGuest: false,
   login: async () => {},
   register: async () => {},
-  loginAsDemo: () => {},
   signOut: async () => {},
 });
 
@@ -83,7 +80,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
 
   const [getMe] = useLazyQuery(ME_QUERY, {
     client,
@@ -96,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const tokenMatch = document.cookie.match(/auth_token=([^;]+)/);
+        const tokenMatch = localStorage.getItem('auth_token');
         if (tokenMatch) {
           const { data } = await getMe();
           if (data?.me) {
@@ -127,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (data?.login) {
+      localStorage.setItem('auth_token', data.login.token);
       setUser({ id: data.login.user.id, email: data.login.user.email });
       setProfile({
         uid: data.login.user.id,
@@ -145,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (data?.register) {
+      localStorage.setItem('auth_token', data.register.token);
       setUser({ id: data.register.user.id, email: data.register.user.email });
       setProfile({
         uid: data.register.user.id,
@@ -156,45 +154,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginAsDemo = () => {
-    setIsDemo(true);
-    setLoading(false);
-  };
-
   const signOut = async () => {
-    if (isDemo) {
-      setIsDemo(false);
-      setUser(null);
-      setProfile(null);
-    } else {
-      try {
-        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-      } catch (e) {
-        console.error('Logout error:', e);
-      }
-      setUser(null);
-      setProfile(null);
-      document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (e) {
+      console.error('Logout error:', e);
     }
+    setUser(null);
+    setProfile(null);
+    localStorage.removeItem('auth_token');
+    document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   };
 
   const value = {
-    user: isDemo ? ({ id: 'demo-user', email: 'demo@duka.smart' } as any) : user,
-    profile: isDemo ? ({ uid: 'demo-user', email: 'demo@duka.smart', displayName: 'Demo Manager', role: 'owner' as const, status: 'active' as const } as any) : profile,
-    loading: loading && !isDemo,
-    isOwner: isDemo || profile?.role === 'owner',
-    isGuest: isDemo,
+    user,
+    profile,
+    loading,
+    isOwner: profile?.role === 'owner',
     login,
     register,
-    loginAsDemo,
     signOut
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {loading && !isDemo ? (
+      {loading ? (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-          <div className="h-10 w-10 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          <LoadingSpinner />
         </div>
       ) : (
         children

@@ -102,6 +102,11 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
       return;
     }
 
+    if (formData.selling_price !== undefined && formData.buying_price !== undefined && formData.buying_price >= formData.selling_price) {
+      toast.info(lang === 'en' ? 'Buying price cannot be greater than or equal to selling price' : 'Bei ya kununua haiwezi kuwa kubwa au sawa na bei ya kuuza');
+      return;
+    }
+
     try {
       if (editingId) {
         await updateProduct({
@@ -141,8 +146,13 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
         low_stock_threshold: 5
       });
       refetch();
-    } catch (error) {
-      toast.error(lang === 'en' ? 'Failed to save product' : 'Imeshindwa kuhifadhi bidhaa');
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (message.includes('Selling price must be greater than buying price')) {
+        toast.info(lang === 'en' ? 'Buying price cannot be greater than or equal to selling price' : 'Bei ya kununua haiwezi kuwa kubwa au sawa na bei ya kuuza');
+      } else {
+        toast.error(lang === 'en' ? 'Failed to save product' : 'Imeshindwa kuhifadhi bidhaa');
+      }
     }
   };
 

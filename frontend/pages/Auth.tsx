@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { translations, type Language } from '../lib/i18n';
 import { motion } from 'motion/react';
-import { LogIn, ShieldCheck, Mail, Lock, User as UserIcon, Zap } from 'lucide-react';
+import { LogIn, ShieldCheck, Mail, Lock, User as UserIcon } from 'lucide-react';
 import BrandLogo from '../../Brandlogo.svg';
 import BrandName from '../../Brandname.svg';
 import { toast } from 'sonner';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
@@ -37,12 +38,6 @@ export default function AuthPage({ lang }: Props) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAnonymous = async () => {
-    console.log("Using demo mode to bypass restricted operation...");
-    toast.info(lang === 'en' ? 'Starting in Demo Mode...' : 'Inaanza katika Njia ya Onyesho...');
-    loginAsDemo();
   };
 
   return (
@@ -118,7 +113,7 @@ export default function AuthPage({ lang }: Props) {
             className="w-full h-14 bg-brand-primary text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-orange-200 dark:shadow-none hover:bg-orange-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
           >
             {loading ? (
-              <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <LoadingSpinner size={24} thickness={200} speed={75} color="#ffffff" secondaryColor="rgba(255, 255, 255, 0.3)" />
             ) : (
               <>
                 {isLogin ? <LogIn size={18} /> : <ShieldCheck size={18} />}
@@ -127,24 +122,7 @@ export default function AuthPage({ lang }: Props) {
             )}
           </button>
 
-          {isLogin && (
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100 dark:border-slate-800"></div></div>
-              <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest"><span className="bg-white dark:bg-slate-900 px-4 text-slate-400">{lang === 'en' ? 'OR' : 'AU'}</span></div>
-            </div>
-          )}
-
-          {isLogin && (
-            <button 
-              type="button"
-              onClick={handleAnonymous}
-              disabled={loading}
-              className="w-full h-14 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
-            >
-              <Zap size={18} className="text-amber-500" />
-              {lang === 'en' ? 'Quick Test / Guest Access' : 'Jaribio la Haraka / Ufikiaji wa Mgeni'}
-            </button>
-          )}
+          
         </form>
 
         <div className="mt-8 pt-8 border-t border-slate-50 dark:border-slate-800 text-center">
