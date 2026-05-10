@@ -255,14 +255,6 @@ mangi-store/
 
 ---
 
-## Screenshots
-
-| Dashboard | Sales | Products | Customers |
-|:---------:|:-----:|:--------:|:---------:|
-| ![Dashboard] | ![Sales] | ![Products] | ![Customers] |
-
----
-
 ## License
 
 MIT License - feel free to use this project for your business.
