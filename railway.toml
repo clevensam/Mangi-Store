@@ -1,0 +1,16 @@
+[build]
+  builder = "NIXPACKS"
+
+[deploy]
+  healthcheckPath = "/api/health"
+  startCommand = "npm run start"
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 10
+
+[ Railway Variables - set these in the Railway dashboard ]
+PORT = 3000
+SUPABASE_URL = your-supabase-url
+SUPABASE_ANON_KEY = your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY = your-supabase-service-role-key
+JWT_SECRET = your-jwt-secret
+FRONTEND_URL = https://your-frontend.vercel.app
