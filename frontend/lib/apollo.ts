@@ -6,7 +6,10 @@ const httpLink = createHttpLink({
 });
 
 const authLink = new ApolloLink((operation, forward) => {
-  const token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
+  let token = document.cookie.match(/auth_token=([^;]+)/)?.[1];
+  if (!token) {
+    token = localStorage.getItem('auth_token');
+  }
   operation.setContext({
     headers: {
       authorization: token ? `Bearer ${token}` : '',
