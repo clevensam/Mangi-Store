@@ -144,6 +144,12 @@ ALTER TABLE debt_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE operating_expenses ENABLE ROW LEVEL SECURITY;
 
 -- Note: users table does NOT have RLS - managed entirely by backend
+-- Grants for anon/authenticated roles (Fix 2: fallback when service_role key is unavailable)
+-- Run in Supabase SQL Editor:
+--   GRANT USAGE ON SCHEMA public TO anon;
+--   GRANT USAGE ON SCHEMA public TO authenticated;
+--   GRANT ALL ON users TO anon;
+--   GRANT ALL ON users TO authenticated;
 
 -- Profiles: users can only see their own
 CREATE POLICY "users_own_profiles" ON profiles FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
