@@ -155,15 +155,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
     setUser(null);
     setProfile(null);
     localStorage.removeItem('auth_token');
-    document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   };
 
   const value = {
