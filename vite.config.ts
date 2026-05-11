@@ -24,18 +24,6 @@ export default defineConfig(({mode}) => {
     },
 server: {
       port: 5173,
-      proxy: {
-        '/graphql': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false
-        },
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false
-        }
-      },
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };
