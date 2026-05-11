@@ -131,7 +131,8 @@ CREATE TABLE operating_expenses (
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================================
 
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+-- RLS: users table is managed by backend, no RLS needed
+-- RLS: other tables have RLS enabled
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE business_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_members ENABLE ROW LEVEL SECURITY;
@@ -142,8 +143,7 @@ ALTER TABLE debts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE debt_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE operating_expenses ENABLE ROW LEVEL SECURITY;
 
--- Users: backend manages, allow all
-CREATE POLICY "allow_all_users" ON users FOR ALL USING (true) WITH CHECK (true);
+-- Note: users table does NOT have RLS - managed entirely by backend
 
 -- Profiles: users can only see their own
 CREATE POLICY "users_own_profiles" ON profiles FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
