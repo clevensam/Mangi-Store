@@ -110,12 +110,6 @@ export default function AuthPage({ lang, mode = 'login' }: Props) {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
         >
-          {/* Mobile Brand Header */}
-          <div className="lg:hidden text-center mb-8">
-            <img src={BrandLogo} alt="Mangi" className="h-16 w-16 mx-auto object-contain mb-2" />
-            <img src={BrandName} alt="Mangi Store" className="h-6 mx-auto object-contain" />
-          </div>
-
           {/* Card - Same design as before */}
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800">
             <div className="flex flex-col items-center mb-8">
