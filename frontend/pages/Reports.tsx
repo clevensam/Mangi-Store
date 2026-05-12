@@ -6,50 +6,27 @@ import { formatCurrency, cn } from '../lib/utils';
 import { Calculator, Search, Calendar, ChevronDown, DollarSign, Package, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const GET_SALES_AND_PRODUCTS = gql`
-  query GetSalesAndProducts($startDate: String, $endDate: String) {
-    products {
-      id
-      name
-      category
-      buying_price
-      selling_price
-    }
-    sales(startDate: $startDate, endDate: $endDate) {
-      id
-      product_id
-      quantity
-      total_price
-      created_at
+const SALES_REPORT = gql`
+  query SalesReport($startDate: String!, $endDate: String!) {
+    salesReport(startDate: $startDate, endDate: $endDate) {
+      items {
+        productId
+        productName
+        totalQuantity
+        totalRevenue
+        totalCost
+        totalProfit
+      }
+      summary {
+        totalRevenue
+        totalQuantity
+        totalProfit
+      }
     }
   }
 `;
 
 type PeriodType = 'today' | 'custom' | 'week' | 'month' | '3months' | '6months';
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  buying_price: number;
-  selling_price: number;
-}
-
-interface Sale {
-  id: string;
-  product_id: string;
-  quantity: number;
-  total_price: number;
-  created_at: string;
-}
-
-interface SalesSummary {
-  productId: string;
-  productName: string;
-  totalQuantity: number;
-  totalRevenue: number;
-  totalCost: number;
-}
 
 const QUICK_OPTIONS: { value: PeriodType; labelKey: 'today' | 'date' }[] = [
   { value: 'today', labelKey: 'today' },
@@ -110,74 +87,41 @@ export default function ReportsPage({ lang }: { lang: Language }) {
     return { start, end };
   }, [period, selectedDate]);
 
-  const { loading, data } = useQuery(GET_SALES_AND_PRODUCTS, {
+  const { loading, data } = useQuery(SALES_REPORT, {
     variables: {
       startDate: dateRange.start.toISOString(),
       endDate: dateRange.end.toISOString(),
     },
   });
 
-  const filteredSales = useMemo((): Sale[] => {
-    if (!data?.sales) return [];
-
-    return data.sales.filter((sale: Sale) => {
-      const saleDate = new Date(sale.created_at);
-      return saleDate >= dateRange.start && saleDate <= dateRange.end;
-    });
-  }, [data, dateRange]);
-
-  const salesWithProducts = useMemo((): SalesSummary[] => {
-    if (!data?.products) return [];
-    
-    const productMap = new Map<string, Product>(data.products.map((p: Product) => [p.id, p]));
-    
-    const grouped = filteredSales.reduce<Record<string, SalesSummary>>((acc, sale) => {
-      const product = productMap.get(sale.product_id);
-      if (!product) return acc;
-      
-      const key = sale.product_id;
-      if (!acc[key]) {
-        acc[key] = {
-          productId: sale.product_id,
-          productName: product.name,
-          totalQuantity: 0,
-          totalRevenue: 0,
-          totalCost: 0
-        };
-      }
-      
-      const quantity = sale.quantity;
-      const revenue = sale.total_price;
-      const cost = (product.buying_price || 0) * quantity;
-      
-      acc[key].totalQuantity += quantity;
-      acc[key].totalRevenue += revenue;
-      acc[key].totalCost += cost;
-      
-      return acc;
-    }, {});
-
-    return Object.values(grouped).sort((a, b) => b.totalRevenue - a.totalRevenue);
-  }, [filteredSales, data]);
+  const reportItems = data?.salesReport?.items ?? [];
+  const reportSummary = data?.salesReport?.summary;
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return salesWithProducts;
+    if (!searchTerm.trim()) return reportItems;
     const query = searchTerm.toLowerCase();
-    return salesWithProducts.filter((item: SalesSummary) => 
+    return reportItems.filter((item: any) =>
       item.productName.toLowerCase().includes(query)
     );
-  }, [salesWithProducts, searchTerm]);
+  }, [reportItems, searchTerm]);
 
   const totals = useMemo(() => {
+    if (!searchTerm.trim() && reportSummary) {
+      return {
+        totalRevenue: reportSummary.totalRevenue,
+        totalQuantity: reportSummary.totalQuantity,
+        totalProfit: reportSummary.totalProfit,
+      };
+    }
     return filteredProducts.reduce(
-      (acc, item: SalesSummary) => ({
+      (acc: any, item: any) => ({
         totalRevenue: acc.totalRevenue + item.totalRevenue,
         totalQuantity: acc.totalQuantity + item.totalQuantity,
-        totalProfit: acc.totalProfit + (item.totalRevenue - item.totalCost)
+        totalProfit: acc.totalProfit + item.totalProfit,
       }),
-      { totalRevenue: 0, totalQuantity: 0, totalProfit: 0 }
+      { totalRevenue: 0, totalQuantity: 0, totalProfit: 0 },
     );
-  }, [filteredProducts]);
+  }, [filteredProducts, reportSummary, searchTerm]);
 
   if (loading) {
     return (
@@ -334,7 +278,7 @@ export default function ReportsPage({ lang }: { lang: Language }) {
                     </tr>
                   ) : (
                     <AnimatePresence mode="popLayout">
-                      {filteredProducts.map((item: SalesSummary, index: number) => (
+                      {filteredProducts.map((item: any, index: number) => (
                         <motion.tr
                           layout
                           initial={{ opacity: 0 }}
