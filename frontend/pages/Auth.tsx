@@ -42,7 +42,7 @@ export default function AuthPage({ lang, mode = 'login' }: Props) {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-slate-950">
       {/* Left Panel - Branding */}
-      <div className="relative w-full lg:w-[45%] min-h-[45vh] lg:min-h-screen bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] overflow-hidden flex flex-col items-center justify-center p-8 lg:p-12">
+      <div className="relative w-full lg:w-[45%] min-h-[45vh] lg:min-h-screen bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] overflow-hidden flex-col items-center justify-center p-8 lg:p-12 hidden lg:flex">
         {/* Decorative Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-[10%] left-[10%] w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" />
