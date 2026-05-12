@@ -7,7 +7,7 @@ import { Calculator, Search, Calendar, ChevronDown, DollarSign, Package, Trendin
 import { motion, AnimatePresence } from 'motion/react';
 
 const GET_SALES_AND_PRODUCTS = gql`
-  query GetSalesAndProducts {
+  query GetSalesAndProducts($startDate: String, $endDate: String) {
     products {
       id
       name
@@ -15,7 +15,7 @@ const GET_SALES_AND_PRODUCTS = gql`
       buying_price
       selling_price
     }
-    sales {
+    sales(startDate: $startDate, endDate: $endDate) {
       id
       product_id
       quantity
@@ -69,11 +69,7 @@ export default function ReportsPage({ lang }: { lang: Language }) {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { loading, data } = useQuery(GET_SALES_AND_PRODUCTS);
-
-  const filteredSales = useMemo((): Sale[] => {
-    if (!data?.sales) return [];
-    
+  const dateRange = useMemo(() => {
     let start: Date;
     let end: Date = new Date();
 
@@ -111,11 +107,24 @@ export default function ReportsPage({ lang }: { lang: Language }) {
         start.setDate(start.getDate() - 90);
     }
 
+    return { start, end };
+  }, [period, selectedDate]);
+
+  const { loading, data } = useQuery(GET_SALES_AND_PRODUCTS, {
+    variables: {
+      startDate: dateRange.start.toISOString(),
+      endDate: dateRange.end.toISOString(),
+    },
+  });
+
+  const filteredSales = useMemo((): Sale[] => {
+    if (!data?.sales) return [];
+
     return data.sales.filter((sale: Sale) => {
       const saleDate = new Date(sale.created_at);
-      return saleDate >= start && saleDate <= end;
+      return saleDate >= dateRange.start && saleDate <= dateRange.end;
     });
-  }, [data, period, selectedDate]);
+  }, [data, dateRange]);
 
   const salesWithProducts = useMemo((): SalesSummary[] => {
     if (!data?.products) return [];
@@ -262,10 +271,17 @@ export default function ReportsPage({ lang }: { lang: Language }) {
                   
                   <div className="relative">
                     <select
-                      value={period}
-                      onChange={(e) => setPeriod(e.target.value as PeriodType)}
+                      value={PERIOD_DROPDOWN_OPTIONS.some(o => o.value === period) ? period : ''}
+                      onChange={(e) => {
+                        if (e.target.value) setPeriod(e.target.value as PeriodType);
+                      }}
                       className="appearance-none pl-4 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 cursor-pointer"
                     >
+                      {!PERIOD_DROPDOWN_OPTIONS.some(o => o.value === period) && (
+                        <option value="" disabled>
+                          {period === 'today' ? t.today : t.date}
+                        </option>
+                      )}
                       {PERIOD_DROPDOWN_OPTIONS.map(opt => (
                         <option key={opt.value} value={opt.value}>{t[opt.labelKey]}</option>
                       ))}
