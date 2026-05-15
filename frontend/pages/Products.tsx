@@ -184,13 +184,13 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
-      <div className="pt-8 px-8 pb-0 shrink-0">
-        <div className="max-w-7xl mx-auto flex justify-between items-end">
+      <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-0 shrink-0">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 sm:gap-4">
           <div>
-            <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t.products}</h2>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.manageCatalog}</p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t.products}</h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{t.manageCatalog}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-start sm:self-auto">
              <div className="flex items-center bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
                 <button 
                   onClick={() => setViewMode('grid')}
@@ -233,13 +233,13 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pt-4 px-8 pb-8 no-scrollbar">
-        <div className="max-w-7xl mx-auto pb-32 space-y-8">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      <div className="flex-1 overflow-y-auto pt-4 px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar">
+        <div className="max-w-7xl mx-auto pb-32 space-y-4 sm:space-y-8">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
             {/* Table Toolbar */}
-            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="relative flex-1 max-w-sm group">
+            <div className="p-4 sm:p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-1">
+                <div className="relative flex-1 sm:max-w-sm group">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={18} />
                   <input
                     type="text"
@@ -249,13 +249,13 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-100 dark:border-slate-700 shrink-0 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-100 dark:border-slate-700 overflow-x-auto no-scrollbar shrink-0 max-w-full">
                   {CATEGORIES.map(cat => (
                     <button
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
                       className={cn(
-                        "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                        "px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                         categoryFilter === cat 
                           ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm ring-1 ring-slate-100 dark:ring-slate-600" 
                           : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
@@ -273,11 +273,11 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-50 dark:border-slate-800">
-                      <th className="py-6 px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.productName}</th>
-                      <th className="py-6 px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.category}</th>
-                      <th className="py-6 px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.buying}</th>
-                      <th className="py-6 px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.selling}</th>
-                      <th className="py-6 px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">{t.action}</th>
+                      <th className="py-4 sm:py-6 px-4 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.productName}</th>
+                      <th className="py-4 sm:py-6 px-3 sm:px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest hidden sm:table-cell">{t.category}</th>
+                      <th className="py-4 sm:py-6 px-3 sm:px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right hidden sm:table-cell">{t.buying}</th>
+                      <th className="py-4 sm:py-6 px-3 sm:px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.selling}</th>
+                      <th className="py-4 sm:py-6 px-4 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">{t.action}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -292,46 +292,46 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                           className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
                           onClick={() => onViewDetails?.(product.id)}
                         >
-                          <td className="py-5 px-8">
-                            <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary transition-all overflow-hidden border border-slate-100 dark:border-slate-700">
-                                <Package size={22} />
+                          <td className="py-4 sm:py-5 px-4 sm:px-8">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary transition-all overflow-hidden border border-slate-100 dark:border-slate-700">
+                                <Package size={20} />
                               </div>
-                              <span className="font-bold text-slate-900 dark:text-slate-100">{product.name}</span>
+                              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">{product.name}</span>
                             </div>
                           </td>
-                          <td className="py-5 px-6">
+                          <td className="py-4 sm:py-5 px-3 sm:px-6 hidden sm:table-cell">
                             <span className={cn(
-                               "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-100 dark:ring-slate-700"
+                               "px-3 sm:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-100 dark:ring-slate-700"
                              )}>
                                {t[product.category as keyof typeof t] || product.category}
                              </span>
                           </td>
-                          <td className="py-5 px-6 text-right font-bold text-slate-400 dark:text-slate-500 tabular-nums">
+                          <td className="py-4 sm:py-5 px-3 sm:px-6 text-right font-bold text-slate-400 dark:text-slate-500 tabular-nums hidden sm:table-cell">
                             {formatCurrency(product.buying_price)}
                           </td>
-                          <td className="py-5 px-6 text-right font-black text-slate-900 dark:text-slate-100 tabular-nums">
+                          <td className="py-4 sm:py-5 px-3 sm:px-6 text-right font-black text-slate-900 dark:text-slate-100 tabular-nums">
                             {formatCurrency(product.selling_price)}
                           </td>
-                          <td className="py-5 px-8">
-                            <div className="flex items-center justify-center gap-2">
+                          <td className="py-4 sm:py-5 px-4 sm:px-8">
+                            <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                                <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(product);
                                   }} 
-                                  className="h-10 w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary hover:border-brand-primary/30 transition-all shadow-sm"
+                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary hover:border-brand-primary/30 transition-all shadow-sm"
                                 >
-                                  <Edit2 size={16} />
+                                  <Edit2 size={14} />
                                 </button>
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(product.id!);
                                   }} 
-                                  className="h-10 w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm"
+                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm"
                                 >
-                                  <Trash2 size={16} />
+                                  <Trash2 size={14} />
                                 </button>
                             </div>
                           </td>
@@ -342,7 +342,7 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                 </table>
               </div>
             ) : (
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                 <AnimatePresence mode="popLayout">
                   {filteredProducts.map((product) => (
                     <motion.div
@@ -352,38 +352,38 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                       exit={{ opacity: 0, scale: 0.9 }}
                       key={product.id}
                       onClick={() => onViewDetails?.(product.id!)}
-                      className="group bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-3xl p-6 transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none hover:border-brand-primary/20 cursor-pointer relative"
+                      className="group bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none hover:border-brand-primary/20 cursor-pointer relative"
                     >
-                      <div className="flex flex-col gap-5">
+                      <div className="flex flex-col gap-3 sm:gap-5">
                         <div className="flex justify-between items-start">
-                          <div className="h-14 w-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-center text-slate-400 group-hover:text-brand-primary transition-colors">
-                            <Package size={28} />
+                          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-center text-slate-400 group-hover:text-brand-primary transition-colors">
+                            <Package size={22} />
                           </div>
                           <div className="flex gap-1 transition-opacity">
-                             <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-brand-primary transition-colors border border-slate-100 dark:border-slate-800">
-                               <Edit2 size={14} />
+                             <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-brand-primary transition-colors border border-slate-100 dark:border-slate-800">
+                               <Edit2 size={12} />
                              </button>
-                             <button onClick={(e) => { e.stopPropagation(); handleDelete(product.id!); }} className="p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 dark:border-slate-800">
-                               <Trash2 size={14} />
+                             <button onClick={(e) => { e.stopPropagation(); handleDelete(product.id!); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 dark:border-slate-800">
+                               <Trash2 size={12} />
                              </button>
                           </div>
                         </div>
                         
                         <div className="space-y-1">
-                          <h4 className="font-black text-xl text-slate-900 dark:text-slate-100 leading-tight tracking-tight">{product.name}</h4>
+                          <h4 className="font-black text-lg sm:text-xl text-slate-900 dark:text-slate-100 leading-tight tracking-tight">{product.name}</h4>
                           <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                             {t[product.category as keyof typeof t] || product.category}
                           </p>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-end">
+                        <div className="pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-end">
                            <div className="space-y-1">
                              <p className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Buying Price</p>
-                             <p className="font-bold text-slate-500 dark:text-slate-400 tabular-nums">{formatCurrency(product.buying_price)}</p>
+                             <p className="font-bold text-slate-500 dark:text-slate-400 tabular-nums text-xs sm:text-sm">{formatCurrency(product.buying_price)}</p>
                            </div>
                            <div className="text-right space-y-1">
                              <p className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em]">Selling Price</p>
-                             <p className="font-black text-2xl text-brand-primary tabular-nums tracking-tighter">{formatCurrency(product.selling_price)}</p>
+                             <p className="font-black text-xl sm:text-2xl text-brand-primary tabular-nums tracking-tighter">{formatCurrency(product.selling_price)}</p>
                            </div>
                         </div>
                       </div>
@@ -394,25 +394,25 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
             )}
 
             {/* Pagination Placeholder */}
-            <div className="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 flex justify-end gap-2 shrink-0">
-               <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 cursor-not-allowed">Previous</button>
+            <div className="p-4 sm:p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 flex flex-wrap justify-center sm:justify-end gap-2 shrink-0">
+               <button className="px-3 sm:px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 cursor-not-allowed">Previous</button>
                <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-brand-primary text-white text-xs font-black shadow-md shadow-orange-100 dark:shadow-none">1</button>
                <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">2</button>
-               <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-300 hover:text-brand-primary transition-colors">Next</button>
+               <button className="px-3 sm:px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-300 hover:text-brand-primary transition-colors">Next</button>
             </div>
           </div>
         </div>
 
         {filteredProducts.length === 0 && (
-          <div className="max-w-7xl mx-auto py-32 text-center">
-            <div className="inline-flex p-8 bg-white dark:bg-slate-900 rounded-full text-slate-200 dark:text-slate-800 mb-6 shadow-sm border border-slate-50 dark:border-slate-800 transition-colors">
-              <Package size={64} />
+          <div className="max-w-7xl mx-auto py-16 sm:py-32 text-center">
+            <div className="inline-flex p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-full text-slate-200 dark:text-slate-800 mb-4 sm:mb-6 shadow-sm border border-slate-50 dark:border-slate-800 transition-colors">
+              <Package size={48} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">No products found</h3>
-            <p className="text-slate-400 dark:text-slate-500 mt-2 max-w-sm mx-auto">Try adjusting your filters or search terms to find what you're looking for.</p>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100">No products found</h3>
+            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-2 max-w-sm mx-auto px-4">Try adjusting your filters or search terms to find what you're looking for.</p>
             <button 
-              onClick={() => { setSearchTerm(''); setCategoryFilter('All'); }}
-              className="mt-6 text-brand-primary font-bold hover:underline"
+              onClick={() => { setSearchTerm(''); setCategoryFilter('all'); }}
+              className="mt-4 sm:mt-6 text-brand-primary font-bold hover:underline text-sm"
             >
               Clear all filters
             </button>

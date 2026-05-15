@@ -136,31 +136,31 @@ export default function DashboardPage({ lang, onNavigate }: Props) {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
-      <div className="pt-6 px-8 pb-4 shrink-0">
+      <div className="pt-4 sm:pt-6 px-4 sm:px-6 lg:px-8 pb-4 shrink-0">
         <div className="max-w-7xl mx-auto">
           {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-brand-primary to-orange-500 rounded-2xl p-6 shadow-lg shadow-orange-200/50 dark:shadow-none relative overflow-hidden">
+          <div className="bg-gradient-to-r from-brand-primary to-orange-500 rounded-2xl p-4 sm:p-6 shadow-lg shadow-orange-200/50 dark:shadow-none relative overflow-hidden">
             <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
                   {greeting}, {profile?.displayName || 'User'}!
                 </h1>
-                <p className="text-white/80 font-medium mt-1 text-sm">
+                <p className="text-white/80 font-medium mt-1 text-xs sm:text-sm">
                   {getCurrentDate()}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={() => onNavigate?.('sales')}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white text-brand-primary rounded-xl font-bold text-sm transition-all shadow-lg shadow-black/10 hover:scale-105 active:scale-95"
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-white text-brand-primary rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-black/10 hover:scale-105 active:scale-95"
                 >
                   <Plus size={16} />
                   {t.newSale}
                 </button>
                 <button 
                   onClick={() => onNavigate?.('products')}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold text-sm transition-all backdrop-blur-sm hover:scale-105 active:scale-95"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold text-xs sm:text-sm transition-all backdrop-blur-sm hover:scale-105 active:scale-95"
                 >
                   <PackagePlus size={16} />
                   {t.addProduct}
@@ -171,75 +171,75 @@ export default function DashboardPage({ lang, onNavigate }: Props) {
         </div>
       </div>
 
-      <div className="px-8 pb-4 shrink-0">
+      <div className="px-4 sm:px-6 lg:px-8 pb-4 shrink-0">
         <div className="max-w-7xl mx-auto">
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-xl">
-                  <DollarSign size={20} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="p-2 sm:p-2.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-xl">
+                  <DollarSign size={18} />
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
+                <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
                   {t.todaysSales}
                 </span>
               </div>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
                 {formatCurrency(dashboardData?.stats.todaySales || 0)}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 {dashboardData?.stats.todayOrderCount || 0} {lang === 'en' ? 'orders' : 'maagizo'}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 rounded-xl">
-                  <ShoppingCart size={20} />
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="p-2 sm:p-2.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 rounded-xl">
+                  <ShoppingCart size={18} />
                 </div>
               </div>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
                 {dashboardData?.stats.todayOrderCount || 0}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 {t.todaysOrders}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className={cn(
-                  "p-2.5 rounded-xl",
+                  "p-2 sm:p-2.5 rounded-xl",
                   (dashboardData?.stats.lowStockCount || 0) > 0 
                     ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600" 
                     : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600"
                 )}>
-                  <AlertTriangle size={20} />
+                  <AlertTriangle size={18} />
                 </div>
               </div>
               <p className={cn(
-                "text-2xl font-black tracking-tight",
+                "text-xl sm:text-2xl font-black tracking-tight",
                 (dashboardData?.stats.lowStockCount || 0) > 0 
                   ? "text-amber-600 dark:text-amber-400" 
                   : "text-slate-900 dark:text-slate-100"
               )}>
                 {dashboardData?.stats.lowStockCount || 0}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 {t.productsLowStock}
               </p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 bg-purple-50 dark:bg-purple-950/30 text-purple-600 rounded-xl">
-                  <Package size={20} />
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="p-2 sm:p-2.5 bg-purple-50 dark:bg-purple-950/30 text-purple-600 rounded-xl">
+                  <Package size={18} />
                 </div>
               </div>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
                 {formatCurrency(dashboardData?.stats.inventoryValue || 0)}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 {t.inventoryValue}
               </p>
             </div>
@@ -247,9 +247,9 @@ export default function DashboardPage({ lang, onNavigate }: Props) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 pb-8 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Sales Chart */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
               <div className="flex items-center justify-between mb-6">

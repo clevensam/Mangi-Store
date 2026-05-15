@@ -176,24 +176,24 @@ export default function StockPage({ lang, onViewDetails }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
-      <div className="pt-8 px-8 pb-0 shrink-0">
+      <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-0 shrink-0">
         <div className="w-full">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t.stock}</h2>
-              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.manageInventory}</p>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t.stock}</h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{t.manageInventory}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto pt-4 px-8 pb-8 no-scrollbar">
-        <div className="max-w-7xl mx-auto space-y-8 pb-32">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+      <div className="flex-1 overflow-auto pt-4 px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar">
+        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8 pb-32">
+          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
             {/* Table Toolbar */}
-            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-              <div className="flex flex-col md:flex-row items-center gap-4 flex-1">
-                <div className="relative flex-1 w-full md:max-w-sm group">
+            <div className="p-4 sm:p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-1">
+                <div className="relative flex-1 w-full sm:max-w-sm group">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={18} />
                   <input
                     type="text"
@@ -209,7 +209,7 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
                       className={cn(
-                        "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                        "px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                         categoryFilter === cat 
                           ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm ring-1 ring-slate-100 dark:ring-slate-600" 
                           : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
@@ -222,32 +222,32 @@ export default function StockPage({ lang, onViewDetails }: Props) {
               </div>
             </div>
 
-            {/* Table Content */}
-            <div className="overflow-x-auto no-scrollbar">
+            {/* Desktop Table - hidden on mobile */}
+            <div className="hidden sm:block overflow-x-auto no-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-50 dark:border-slate-800">
-                    <th onClick={() => handleSort('name')} className="py-6 px-8 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <th onClick={() => handleSort('name')} className="py-4 sm:py-6 px-4 sm:px-8 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                         {t.products} <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th onClick={() => handleSort('category')} className="py-6 px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <th onClick={() => handleSort('category')} className="py-4 sm:py-6 px-4 sm:px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                         {t.category} <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th onClick={() => handleSort('quantity')} className="py-6 px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center">
+                    <th onClick={() => handleSort('quantity')} className="py-4 sm:py-6 px-4 sm:px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-center">
                       <div className="flex items-center justify-center gap-2 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">
                         {t.stock} <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th onClick={() => handleSort('selling_price')} className="py-6 px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-right">
+                    <th onClick={() => handleSort('selling_price')} className="py-4 sm:py-6 px-4 sm:px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-right">
                       <div className="flex items-center justify-end gap-2 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">
                         {lang === 'en' ? 'Price' : 'Bei'} <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th className="py-6 px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.action}</th>
+                    <th className="py-4 sm:py-6 px-4 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.action}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -259,28 +259,28 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                         onClick={() => onViewDetails?.(product.id)}
                         className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
                       >
-                        <td className="py-5 px-8">
-                          <div className="flex items-center gap-4">
+                        <td className="py-4 sm:py-5 px-4 sm:px-8">
+                          <div className="flex items-center gap-3 sm:gap-4">
                             <div className={cn(
-                              "h-12 w-12 rounded-2xl flex items-center justify-center transition-all border",
+                              "h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all border",
                               isLow ? "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900 text-rose-500 dark:text-rose-400" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500"
                             )}>
-                               <Package size={22} />
+                               <Package size={20} />
                             </div>
-                            <span className="font-bold text-slate-900 dark:text-slate-100">{product.name}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">{product.name}</span>
                           </div>
                         </td>
-                        <td className="py-5 px-6">
+                        <td className="py-4 sm:py-5 px-4 sm:px-6">
                            <span className={cn(
-                             "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-100 dark:ring-slate-700"
+                             "px-3 sm:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-100 dark:ring-slate-700"
                            )}>
                              {t[product.category as keyof typeof t] || product.category}
                            </span>
                         </td>
-                        <td className="py-5 px-6 text-center">
+                        <td className="py-4 sm:py-5 px-4 sm:px-6 text-center">
                           <div className="flex flex-col items-center gap-1">
                              <span className={cn(
-                               "font-black text-lg tabular-nums",
+                               "font-black text-base sm:text-lg tabular-nums",
                                isLow ? "text-rose-500 dark:text-rose-400" : "text-slate-900 dark:text-slate-100"
                              )}>
                                {product.quantity}
@@ -290,17 +290,17 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                              )}
                           </div>
                         </td>
-                        <td className="py-5 px-6 text-right font-black text-slate-900 dark:text-slate-100 tabular-nums">
+                        <td className="py-4 sm:py-5 px-4 sm:px-6 text-right font-black text-slate-900 dark:text-slate-100 tabular-nums">
                           {formatCurrency(product.selling_price)}
                         </td>
-                        <td className="py-5 px-8">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="py-4 sm:py-5 px-4 sm:px-8">
+                          <div className="flex items-center justify-end gap-1.5 sm:gap-2">
                              <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleRestock(product);
                                 }} 
-                                className="h-10 w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all shadow-sm shadow-slate-200/50"
+                                className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all shadow-sm shadow-slate-200/50"
                                 title="Add Stock"
                               >
                                 <Plus size={18} />
@@ -310,7 +310,7 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                                   e.stopPropagation();
                                   handleEdit(product);
                                 }} 
-                                className="h-10 w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary dark:hover:text-brand-secondary hover:border-brand-primary/30 transition-all shadow-sm shadow-slate-200/50"
+                                className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary dark:hover:text-brand-secondary hover:border-brand-primary/30 transition-all shadow-sm shadow-slate-200/50"
                               >
                                 <Edit2 size={16} />
                               </button>
@@ -323,21 +323,80 @@ export default function StockPage({ lang, onViewDetails }: Props) {
               </table>
             </div>
 
+            {/* Mobile Card View */}
+            <div className="sm:hidden divide-y divide-slate-50 dark:divide-slate-800">
+              {filteredAndSortedProducts.map((product) => {
+                const isLow = product.quantity <= product.low_stock_threshold;
+                return (
+                  <div
+                    key={product.id}
+                    onClick={() => onViewDetails?.(product.id)}
+                    className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center border shrink-0",
+                        isLow ? "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900 text-rose-500 dark:text-rose-400" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500"
+                      )}>
+                        <Package size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{product.name}</p>
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {t[product.category as keyof typeof t] || product.category}
+                        </p>
+                      </div>
+                      <span className="font-black text-slate-900 dark:text-slate-100 tabular-nums text-sm">
+                        {formatCurrency(product.selling_price)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "font-black text-lg tabular-nums",
+                          isLow ? "text-rose-500 dark:text-rose-400" : "text-slate-900 dark:text-slate-100"
+                        )}>
+                          {product.quantity}
+                        </span>
+                        {isLow && (
+                          <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/30 text-rose-500 dark:text-rose-400 rounded text-[8px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-900">Low</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRestock(product); }}
+                          className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 transition-all"
+                        >
+                          <Plus size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
+                          className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary transition-all"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Pagination Placeholder */}
-            <div className="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 flex justify-end gap-2">
-               <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 cursor-not-allowed">Previous</button>
+            <div className="p-4 sm:p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/10 flex flex-wrap justify-center sm:justify-end gap-2">
+               <button className="px-3 sm:px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 cursor-not-allowed">Previous</button>
                <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-brand-primary text-white text-xs font-black shadow-md shadow-orange-100 dark:shadow-none">1</button>
                <button className="h-8 w-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">2</button>
-               <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-300 hover:text-brand-primary transition-colors">Next</button>
+               <button className="px-3 sm:px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-slate-300 hover:text-brand-primary transition-colors">Next</button>
             </div>
             {/* No Products Found State */}
             {filteredAndSortedProducts.length === 0 && (
-              <div className="p-32 text-center bg-white dark:bg-slate-900">
+              <div className="p-12 sm:p-32 text-center bg-white dark:bg-slate-900">
                 <div className="inline-flex p-6 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-300 dark:text-slate-700 mb-4">
-                  <Search size={48} />
+                  <Search size={36} />
                 </div>
-                <p className="text-slate-400 dark:text-slate-500 font-bold text-lg">No products found matching your criteria</p>
-                <button onClick={() => { setSearchTerm(''); setCategoryFilter('All'); }} className="mt-4 text-brand-primary font-bold hover:underline font-black uppercase tracking-widest text-xs">
+                <p className="text-slate-400 dark:text-slate-500 font-bold text-base sm:text-lg">No products found matching your criteria</p>
+                <button onClick={() => { setSearchTerm(''); setCategoryFilter('all'); }} className="mt-4 text-brand-primary font-bold hover:underline font-black uppercase tracking-widest text-xs">
                   Clear all filters
                 </button>
               </div>

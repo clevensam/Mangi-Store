@@ -106,21 +106,21 @@ export default function SalesPage({ lang }: Props) {
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden relative transition-colors duration-300">
       {/* Header Section */}
-      <div className="pt-8 px-8 pb-0 shrink-0">
+      <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-0 shrink-0">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t.sales}</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{lang === 'en' ? 'Select a product to record a quick sale.' : 'Chagua bidhaa iliurekodi mauzo ya haraka.'}</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t.sales}</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{lang === 'en' ? 'Select a product to record a quick sale.' : 'Chagua bidhaa iliurekodi mauzo ya haraka.'}</p>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto pt-4 px-8 pb-32 no-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="flex-1 overflow-y-auto pt-4 px-4 sm:px-6 lg:px-8 pb-32 no-scrollbar">
+          <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+            <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
               {/* Toolbar */}
-              <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-                <div className="flex flex-col md:flex-row items-center gap-4 flex-1">
-                  <div className="relative flex-1 w-full md:max-w-sm group">
+              <div className="p-4 sm:p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 flex-1">
+                  <div className="relative flex-1 w-full sm:max-w-sm group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={18} />
                     <input
                       type="text"
@@ -137,7 +137,7 @@ export default function SalesPage({ lang }: Props) {
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
                         className={cn(
-                          "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                          "px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                           categoryFilter === cat
                             ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm ring-1 ring-slate-100 dark:ring-slate-600"
                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
@@ -149,7 +149,7 @@ export default function SalesPage({ lang }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                   <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                     <button
                       onClick={() => setViewMode('grid')}
@@ -174,13 +174,13 @@ export default function SalesPage({ lang }: Props) {
               </div>
 
               {/* Product Display */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
                     <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
                   </div>
                 ) : viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                     {filteredProducts.map((product) => {
                       const isZeroStock = product.quantity === 0;
                       const isLowStock = product.quantity > 0 && product.quantity <= 5;
@@ -196,25 +196,25 @@ export default function SalesPage({ lang }: Props) {
                           onClick={() => !isZeroStock && setSelectedProduct(product)}
                           disabled={isZeroStock}
                           className={cn(
-                            "group relative bg-white dark:bg-slate-800/50 border rounded-[2rem] p-6 text-left transition-all active:scale-[0.98]",
+                            "group relative bg-white dark:bg-slate-800/50 border rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 text-left transition-all active:scale-[0.98]",
                             isZeroStock
                               ? "border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed"
                               : "border-slate-100 dark:border-slate-800 hover:border-brand-primary/30 dark:hover:border-brand-primary/50 hover:shadow-xl hover:shadow-orange-900/5 dark:hover:shadow-orange-950/20 cursor-pointer"
                           )}
                         >
                           {isZeroStock && (
-                            <div className="absolute top-4 right-4 px-2 py-1 bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-2 py-1 bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
                               <AlertTriangle size={10} />
                               Out of Stock
                             </div>
                           )}
-                          <div className="flex flex-col gap-4">
-                            <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center transition-all", iconBgClass)}>
-                              <ShoppingBag size={28} />
+                          <div className="flex flex-col gap-3 sm:gap-4">
+                            <div className={cn("h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center transition-all", iconBgClass)}>
+                              <ShoppingBag size={24} />
                             </div>
                             <div>
                               <p className={cn(
-                                "font-black text-lg leading-tight truncate",
+                                "font-black text-base sm:text-lg leading-tight truncate",
                                 isZeroStock ? "text-slate-400 dark:text-slate-600" : "text-slate-800 dark:text-slate-100"
                               )}>
                                 {product.name}
@@ -231,15 +231,15 @@ export default function SalesPage({ lang }: Props) {
                                 {isZeroStock ? ' • Out of stock' : ` • ${product.quantity} ${lang === 'en' ? 'in stock' : 'zipo'}`}
                               </p>
                             </div>
-                            <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                            <div className="pt-3 sm:pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                               <span className={cn(
-                                "text-sm font-black uppercase tracking-widest",
+                                "text-xs sm:text-sm font-black uppercase tracking-widest",
                                 isZeroStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400 dark:text-slate-500"
                               )}>
                                 {lang === 'en' ? 'Price' : 'Bei'}
                               </span>
                               <span className={cn(
-                                "font-bold text-xl tabular-nums",
+                                "font-bold text-lg sm:text-xl tabular-nums",
                                 isZeroStock
                                   ? "text-slate-300 dark:text-slate-600"
                                   : "text-brand-primary"

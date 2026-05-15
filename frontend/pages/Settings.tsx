@@ -64,13 +64,13 @@ export default function SettingsPage({ lang }: { lang: Language }) {
       </div>
 
       {/* Main container */}
-      <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10">
+      <div className="flex-1 py-4 sm:py-6 px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10">
         {/* Header */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900">
+        <div className="max-w-6xl mx-auto mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900">
             {t.settings}
           </h1>
-          <p className="text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {lang === 'en' ? 'Manage your account and preferences' : 'Simamia akaunti na upendeleo wako'}
           </p>
         </div>
