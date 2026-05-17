@@ -27,7 +27,7 @@ const RECORD_SALE = gql`
   }
 `;
 
-const CATEGORIES = ['all', 'drinks', 'groceries', 'electronics', 'clothing', 'others'] as const;
+const CATEGORIES = ['all', 'beer', 'spirits', 'soft_drinks', 'water'] as const;
 type CategoryType = typeof CATEGORIES[number];
 
 interface Product {

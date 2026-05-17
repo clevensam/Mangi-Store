@@ -59,7 +59,7 @@ interface Props {
   onViewDetails?: (id: string) => void;
 }
 
-const CATEGORIES = ['all', 'drinks', 'groceries', 'electronics', 'clothing', 'others'] as const;
+const CATEGORIES = ['all', 'beer', 'spirits', 'soft_drinks', 'water'] as const;
 type CategoryType = typeof CATEGORIES[number];
 
 export default function ProductsPage({ lang, onViewDetails }: Props) {
@@ -74,7 +74,7 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
-    category: 'groceries',
+    category: 'beer',
     buying_price: 0,
     selling_price: 0,
     quantity: 0,
@@ -139,7 +139,7 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
       setEditingId(null);
       setFormData({
         name: '',
-        category: 'groceries',
+        category: 'beer',
         buying_price: 0,
         selling_price: 0,
         quantity: 0,
@@ -216,7 +216,7 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                   setEditingId(null);
                   setFormData({
                     name: '',
-                    category: 'groceries',
+                    category: 'beer',
                     buying_price: 0,
                     selling_price: 0,
                     quantity: 0,

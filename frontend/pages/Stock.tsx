@@ -44,7 +44,7 @@ interface Props {
   onViewDetails?: (id: string) => void;
 }
 
-const CATEGORIES = ['all', 'drinks', 'groceries', 'electronics', 'clothing', 'others'] as const;
+const CATEGORIES = ['all', 'beer', 'spirits', 'soft_drinks', 'water'] as const;
 type CategoryType = typeof CATEGORIES[number];
 
 export default function StockPage({ lang, onViewDetails }: Props) {
