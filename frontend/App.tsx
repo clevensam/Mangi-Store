@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Users, BarChart3, Settings, Search, Bell, LogIn, BrainCircuit, MoreHorizontal, Warehouse, DollarSign } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Users, BarChart3, Settings, Search, Bell, LogIn, BrainCircuit, Menu, X, Warehouse, DollarSign } from 'lucide-react';
 import BrandLogo from '../Brandlogo.svg';
 import BrandName from '../Brandname.svg';
 import { cn } from './lib/utils';
@@ -25,7 +25,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('lang') as Language) || 'en';
   });
@@ -196,10 +196,85 @@ function AppLayout() {
         </nav>
       </aside>
 
+      {/* Mobile Sidebar Drawer */}
+      <AnimatePresence>
+        {showMobileSidebar && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileSidebar(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 md:hidden w-72 bg-white dark:bg-slate-900 shadow-2xl flex flex-col"
+            >
+              <div className="h-20 flex items-center px-5 border-b border-slate-50 dark:border-slate-800">
+                <Link to="/dashboard" className="flex items-center gap-3" onClick={() => setShowMobileSidebar(false)}>
+                  <img src={BrandLogo} alt="Mangi" className="h-10 w-10 object-contain shrink-0" />
+                  <img src={BrandName} alt="Mangi" className="h-6 object-contain" />
+                </Link>
+                <button
+                  onClick={() => setShowMobileSidebar(false)}
+                  className="ml-auto h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto no-scrollbar">
+                {navGroups.map((group) => (
+                  <div key={group.title} className="space-y-1">
+                    <h3 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-60">
+                      {group.title}
+                    </h3>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentPath === item.path.replace('/', '') || 
+                          (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
+                        return (
+                          <Link
+                            key={item.id}
+                            to={item.path}
+                            onClick={() => setShowMobileSidebar(false)}
+                            className={cn(
+                              "flex items-center w-full rounded-xl transition-all duration-200 group font-bold text-sm h-11 px-4",
+                              isActive 
+                                ? "bg-orange-50 dark:bg-orange-950/30 text-brand-primary shadow-sm shadow-orange-900/5" 
+                                : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
+                            )}
+                          >
+                            <div className="flex items-center justify-center w-6 mr-3">
+                              <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                            </div>
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Header */}
         <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex h-16 md:h-20 items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 relative z-30 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)] transition-colors duration-300">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <button
+              onClick={() => setShowMobileSidebar(true)}
+              className="md:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shrink-0"
+            >
+              <Menu size={20} />
+            </button>
             <img src={BrandLogo} alt="Mangi" className="md:hidden h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0" />
             {currentPath === 'dashboard' && (
               <h1 className="text-lg sm:text-2xl font-black text-[#1E293B] dark:text-slate-100 tracking-tight font-sans truncate">
@@ -269,7 +344,7 @@ function AppLayout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-28 md:pb-6 relative scroll-smooth no-scrollbar">
+        <main className="flex-1 overflow-y-auto pb-0 md:pb-6 relative scroll-smooth no-scrollbar">
           <div className="w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -286,127 +361,9 @@ function AppLayout() {
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation - Primary 5 items + More */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-1 sm:px-2 pb-safe z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] transition-colors duration-300">
-          <div className="flex items-center justify-around max-w-lg mx-auto">
-            {/* Dashboard */}
-            <MobileNavItem
-              icon={LayoutDashboard}
-              label={t.dashboard}
-              path="/dashboard"
-              currentPath={currentPath}
-            />
-            {/* Sales */}
-            <MobileNavItem
-              icon={ShoppingCart}
-              label={t.sales}
-              path="/sales"
-              currentPath={currentPath}
-            />
-            {/* Products */}
-            <MobileNavItem
-              icon={Package}
-              label={t.products}
-              path="/products"
-              currentPath={currentPath}
-            />
-            {/* Reports */}
-            <MobileNavItem
-              icon={BarChart3}
-              label={t.hesabu}
-              path="/reports"
-              currentPath={currentPath}
-            />
-            {/* More */}
-            <button
-              onClick={() => setShowMobileMenu(true)}
-              className={cn(
-                "flex flex-col items-center gap-0.5 py-2 px-2 sm:px-3 rounded-xl transition-all duration-300 min-w-[56px] sm:min-w-[64px]",
-                showMobileMenu ? "text-brand-primary bg-orange-50 dark:bg-orange-950/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-              )}
-            >
-              <MoreHorizontal size={22} strokeWidth={2} />
-              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap">
-                {lang === 'en' ? 'More' : 'Zaidi'}
-              </span>
-            </button>
-          </div>
-        </nav>
 
-        {/* Mobile More Menu - Bottom Sheet */}
-        <AnimatePresence>
-          {showMobileMenu && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowMobileMenu(false)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
-              />
-              <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white dark:bg-slate-900 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] border-t border-slate-200 dark:border-slate-800"
-              >
-                <div className="flex items-center justify-center pt-3 pb-1">
-                  <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                </div>
-                <div className="px-4 pt-2 pb-6">
-                  <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-2">
-                    {lang === 'en' ? 'More Options' : 'Chaguo Zaidi'}
-                  </h3>
-                  <div className="grid grid-cols-4 gap-1">
-                    {navGroups.flatMap(group => group.items).filter(item => !['dashboard', 'sales', 'products', 'reports'].includes(item.id)).map((item) => {
-                      const Icon = item.icon;
-                      const isActive = currentPath === item.path.replace('/', '') || 
-                        (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
-                      return (
-                        <Link
-                          key={item.id}
-                          to={item.path}
-                          onClick={() => setShowMobileMenu(false)}
-                          className={cn(
-                            "flex flex-col items-center gap-1 py-3 px-1 rounded-2xl transition-all duration-200",
-                            isActive ? "text-brand-primary bg-orange-50 dark:bg-orange-950/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                          )}
-                        >
-                          <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                          <span className={cn("text-[9px] font-black uppercase tracking-[0.1em] text-center leading-tight", isActive ? "opacity-100" : "opacity-60")}>
-                            {item.label}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
     </div>
-  );
-}
-
-function MobileNavItem({ icon: Icon, label, path, currentPath }: { icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; label: string; path: string; currentPath: string }) {
-  const isActive = currentPath === path.replace('/', '') || 
-    (path !== '/' && currentPath.startsWith(path.replace('/', '')));
-  return (
-    <Link
-      to={path}
-      className={cn(
-        "flex flex-col items-center gap-0.5 py-2 px-2 sm:px-3 rounded-xl transition-all duration-300 min-w-[56px] sm:min-w-[64px]",
-        isActive ? "text-brand-primary bg-orange-50 dark:bg-orange-950/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-      )}
-    >
-      <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-      <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] whitespace-nowrap", isActive ? "opacity-100" : "opacity-60")}>
-        {label}
-      </span>
-    </Link>
   );
 }
 

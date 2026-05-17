@@ -242,11 +242,7 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                         {t.stock} <ArrowUpDown size={12} />
                       </div>
                     </th>
-                    <th onClick={() => handleSort('selling_price')} className="py-4 sm:py-6 px-4 sm:px-6 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-right">
-                      <div className="flex items-center justify-end gap-2 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">
-                        {lang === 'en' ? 'Price' : 'Bei'} <ArrowUpDown size={12} />
-                      </div>
-                    </th>
+
                     <th className="py-4 sm:py-6 px-4 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">{t.action}</th>
                   </tr>
                 </thead>
@@ -290,9 +286,7 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                              )}
                           </div>
                         </td>
-                        <td className="py-4 sm:py-5 px-4 sm:px-6 text-right font-black text-slate-900 dark:text-slate-100 tabular-nums">
-                          {formatCurrency(product.selling_price)}
-                        </td>
+
                         <td className="py-4 sm:py-5 px-4 sm:px-8">
                           <div className="flex items-center justify-end gap-1.5 sm:gap-2">
                              <button 
@@ -346,9 +340,6 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                           {t[product.category as keyof typeof t] || product.category}
                         </p>
                       </div>
-                      <span className="font-black text-slate-900 dark:text-slate-100 tabular-nums text-sm">
-                        {formatCurrency(product.selling_price)}
-                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
