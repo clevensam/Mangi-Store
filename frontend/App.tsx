@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Users, BarChart3, Settings, Search, Bell, LogIn, BrainCircuit, Menu, X, Warehouse, DollarSign } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Users, BarChart3, Settings, Search, Bell, LogIn, BrainCircuit, Menu, X, LogOut, Warehouse, DollarSign } from 'lucide-react';
 import BrandLogo from '../Brandlogo.svg';
 import BrandName from '../Brandname.svg';
 import { cn } from './lib/utils';
@@ -26,6 +26,7 @@ function AppLayout() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('lang') as Language) || 'en';
   });
@@ -194,6 +195,20 @@ function AppLayout() {
             </div>
           ))}
         </nav>
+        <div className="border-t border-slate-50 dark:border-slate-800 px-3 py-4">
+          <button
+            onClick={() => signOut()}
+            className={cn(
+              "flex items-center w-full rounded-xl transition-all duration-200 font-bold text-sm h-11 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20",
+              isCollapsed ? "px-2 justify-center" : "px-4"
+            )}
+          >
+            <div className={cn("flex items-center justify-center", isCollapsed ? "w-full" : "w-6 mr-3")}>
+              <LogOut size={18} />
+            </div>
+            {!isCollapsed && <span>{lang === 'en' ? 'Log Out' : 'Toka'}</span>}
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Sidebar Drawer */}
@@ -260,6 +275,17 @@ function AppLayout() {
                   </div>
                 ))}
               </nav>
+              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-4">
+                <button
+                  onClick={() => { signOut(); setShowMobileSidebar(false); }}
+                  className="flex items-center w-full rounded-xl transition-all duration-200 font-bold text-sm h-11 px-4 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                >
+                  <div className="flex items-center justify-center w-6 mr-3">
+                    <LogOut size={18} />
+                  </div>
+                  <span>{lang === 'en' ? 'Log Out' : 'Toka'}</span>
+                </button>
+              </div>
             </motion.div>
           </>
         )}
@@ -317,28 +343,61 @@ function AppLayout() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-slate-100 dark:border-slate-800">
-              <div className="text-right hidden md:block">
+            <div className="flex items-center gap-1 sm:gap-2 pl-2 sm:pl-4 border-l border-slate-100 dark:border-slate-800 relative">
+              <button onClick={() => navigate('/settings')} className="text-right hidden md:block cursor-pointer">
                 <p className="text-sm font-black text-slate-900 dark:text-slate-100 leading-none">
                   {profile?.displayName || 'User'}
                 </p>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
                   {profile?.role === 'owner' ? t.owner : (lang === 'en' ? 'Staff' : 'Mfanyakazi')}
                 </p>
-              </div>
+              </button>
               <button 
-                onClick={() => signOut()}
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm overflow-hidden flex items-center justify-center ring-1 ring-slate-100 dark:ring-slate-700 cursor-pointer hover:ring-rose-500/30 transition-all group"
-                title="Sign Out"
+                onClick={() => navigate('/settings')}
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm overflow-hidden flex items-center justify-center ring-1 ring-slate-100 dark:ring-slate-700 cursor-pointer hover:ring-brand-primary/30 transition-all group shrink-0"
+                title="Settings"
               >
                 <img 
                   src={`https://ui-avatars.com/api/?name=${profile?.displayName || 'User'}&background=random`} 
                   alt="User avatar"
-                  className="h-full w-full object-cover group-hover:opacity-20 transition-opacity"
+                  className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
-                <LogIn className="absolute opacity-0 group-hover:opacity-100 text-rose-500 transition-opacity" size={18} />
               </button>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shrink-0"
+              >
+                <ChevronDown size={16} className={cn("transition-transform", showUserMenu && "rotate-180")} />
+              </button>
+
+              {showUserMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => { navigate('/settings'); setShowUserMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-all"
+                    >
+                      <Settings size={16} />
+                      {t.settings}
+                    </button>
+                    <div className="mx-3 my-1 border-t border-slate-50 dark:border-slate-800" />
+                    <button
+                      onClick={() => { signOut(); setShowUserMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
+                    >
+                      <LogOut size={16} />
+                      {lang === 'en' ? 'Log Out' : 'Toka'}
+                    </button>
+                  </motion.div>
+                </>
+              )}
             </div>
           </div>
         </header>
