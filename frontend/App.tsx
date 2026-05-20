@@ -21,7 +21,7 @@ import AnalysisPage from './pages/Analysis';
 import ProductDetailsPage from './pages/ProductDetails';
 
 function AppLayout() {
-  const { user, profile, isOwner, signOut } = useAuth();
+  const { user, profile, can, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -45,8 +45,8 @@ function AppLayout() {
       items: [
         { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard, path: '/dashboard' },
         { id: 'sales', label: t.sales, icon: ShoppingCart, path: '/sales' },
-        { id: 'reports', label: t.hesabu, icon: BarChart3, path: '/reports' },
-        { id: 'analysis', label: t.analysis, icon: BrainCircuit, path: '/analysis' },
+        { id: 'reports', label: t.hesabu, icon: BarChart3, path: '/reports', roles: ['owner', 'manager'] },
+        { id: 'analysis', label: t.analysis, icon: BrainCircuit, path: '/analysis', roles: ['owner', 'manager'] },
       ]
     },
     {
@@ -55,7 +55,7 @@ function AppLayout() {
       items: [
         { id: 'products', label: t.products, icon: Package, path: '/products' },
         { id: 'stock', label: t.stock, icon: Package, path: '/stock' },
-        { id: 'expenses', label: t.expenses, icon: Receipt, path: '/expenses' },
+        { id: 'expenses', label: t.expenses, icon: Receipt, path: '/expenses', roles: ['owner', 'manager'] },
       ]
     }, 
     {
@@ -77,6 +77,10 @@ function AppLayout() {
 
   const renderPage = () => {
     const path = location.pathname;
+
+    if ((path === '/reports' || path === '/analysis' || path === '/expenses') && !can('owner', 'manager')) {
+      return <DashboardPage lang={lang} onNavigate={(tab) => navigate(`/${tab}`)} />;
+    }
     
     if (path.startsWith('/product/')) {
       const productId = path.split('/product/')[1];
@@ -156,7 +160,9 @@ function AppLayout() {
                 </h3>
               )}
               <div className="space-y-1">
-                {group.items.map((item) => {
+                {group.items
+                  .filter(item => !item.roles || can(...item.roles))
+                  .map((item) => {
                   const Icon = item.icon;
                   const isActive = currentPath === item.path.replace('/', '') || 
                     (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
@@ -248,7 +254,9 @@ function AppLayout() {
                       {group.title}
                     </h3>
                     <div className="space-y-1">
-                      {group.items.map((item) => {
+                      {group.items
+                        .filter(item => !item.roles || can(...item.roles))
+                        .map((item) => {
                         const Icon = item.icon;
                         const isActive = currentPath === item.path.replace('/', '') || 
                           (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
@@ -349,7 +357,7 @@ function AppLayout() {
                   {profile?.displayName || 'User'}
                 </p>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                  {profile?.role === 'owner' ? t.owner : (lang === 'en' ? 'Staff' : 'Mfanyakazi')}
+                  {profile?.role === 'owner' ? t.owner : profile?.role === 'manager' ? (lang === 'en' ? 'Manager' : 'Meneja') : (lang === 'en' ? 'Cashier' : 'Keshia')}
                 </p>
               </button>
               <button 

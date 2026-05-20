@@ -3,6 +3,7 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Package, Edit2, X, Save, Search, Trash2, LayoutGrid, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -64,6 +65,7 @@ type CategoryType = typeof CATEGORIES[number];
 
 export default function ProductsPage({ lang, onViewDetails }: Props) {
   const t = translations[lang];
+  const { can } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -211,24 +213,26 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                   <List size={18} />
                 </button>
              </div>
-             <button 
-                onClick={() => {
-                  setEditingId(null);
-                  setFormData({
-                    name: '',
-                    category: 'beer',
-                    buying_price: 0,
-                    selling_price: 0,
-                    quantity: 0,
-                    low_stock_threshold: 5
-                  });
-                  setShowAdd(true);
-                }}
-                className="h-11 px-6 rounded-xl bg-gradient-brand text-white flex items-center gap-2 shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 hover:bg-gradient-brand-dark transition-all font-black uppercase tracking-widest text-[10px]"
-              >
-                <Plus size={18} />
-                {t.addNew}
-              </button>
+             {can('owner', 'manager') && (
+               <button 
+                 onClick={() => {
+                   setEditingId(null);
+                   setFormData({
+                     name: '',
+                     category: 'beer',
+                     buying_price: 0,
+                     selling_price: 0,
+                     quantity: 0,
+                     low_stock_threshold: 5
+                   });
+                   setShowAdd(true);
+                 }}
+                 className="h-11 px-6 rounded-xl bg-gradient-brand text-white flex items-center gap-2 shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 hover:bg-gradient-brand-dark transition-all font-black uppercase tracking-widest text-[10px]"
+               >
+                 <Plus size={18} />
+                 {t.addNew}
+               </button>
+             )}
           </div>
         </div>
       </div>
@@ -315,24 +319,28 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                           </td>
                           <td className="py-4 sm:py-5 px-4 sm:px-8">
                             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                               <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(product);
-                                  }} 
-                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary hover:border-brand-primary/30 transition-all shadow-sm"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(product.id!);
-                                  }} 
-                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                              {can('owner', 'manager') && (
+                                <>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEdit(product);
+                                    }} 
+                                    className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary hover:border-brand-primary/30 transition-all shadow-sm"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(product.id!);
+                                    }} 
+                                    className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </motion.tr>
@@ -359,14 +367,16 @@ export default function ProductsPage({ lang, onViewDetails }: Props) {
                           <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-center text-slate-400 group-hover:text-brand-primary transition-colors">
                             <Package size={22} />
                           </div>
-                          <div className="flex gap-1 transition-opacity">
-                             <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-brand-primary transition-colors border border-slate-100 dark:border-slate-800">
-                               <Edit2 size={12} />
-                             </button>
-                             <button onClick={(e) => { e.stopPropagation(); handleDelete(product.id!); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 dark:border-slate-800">
-                               <Trash2 size={12} />
-                             </button>
-                          </div>
+                          {can('owner', 'manager') && (
+                            <div className="flex gap-1 transition-opacity">
+                              <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-brand-primary transition-colors border border-slate-100 dark:border-slate-800">
+                                <Edit2 size={12} />
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDelete(product.id!); }} className="p-1.5 sm:p-2 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 dark:border-slate-800">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="space-y-1">

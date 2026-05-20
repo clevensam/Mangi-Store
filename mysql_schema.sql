@@ -15,7 +15,7 @@ CREATE TABLE profiles (
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   display_name VARCHAR(255) NOT NULL,
-  role VARCHAR(20) NOT NULL DEFAULT 'owner' CHECK (role IN ('owner', 'staff')),
+  role VARCHAR(20) NOT NULL DEFAULT 'owner' CHECK (role IN ('owner', 'manager', 'cashier')),
   status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

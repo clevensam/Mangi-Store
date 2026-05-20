@@ -3,6 +3,8 @@ import { useQuery, gql } from '@apollo/client';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   TrendingUp, TrendingDown, AlertTriangle, PackageX, Target, 
   BarChart3, PiggyBank, Warehouse, BrainCircuit, DollarSign,
@@ -101,6 +103,12 @@ interface Props {
 
 export default function AnalysisPage({ lang }: Props) {
   const t = translations[lang];
+  const { can } = useAuth();
+
+  if (!can('owner', 'manager')) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const [period, setPeriod] = useState<PeriodType>('month');
   const [activeTab, setActiveTab] = useState<TabType>('sales');
 

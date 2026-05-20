@@ -4,6 +4,8 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Receipt, Zap, Home, Droplets, Wifi, Car, Wrench, Utensils, MoreHorizontal, Search, Calendar, DollarSign, Edit2, Trash2, X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -81,6 +83,12 @@ const EXPENSE_CATEGORIES = [
 
 export default function ExpensesPage({ lang }: Props) {
   const t = translations[lang];
+  const { can } = useAuth();
+
+  if (!can('owner', 'manager')) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<OperatingExpense | null>(null);

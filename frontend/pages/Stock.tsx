@@ -3,6 +3,7 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Package, X, ArrowUpCircle, Search, ArrowUpDown, Edit2, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -49,6 +50,7 @@ type CategoryType = typeof CATEGORIES[number];
 
 export default function StockPage({ lang, onViewDetails }: Props) {
   const t = translations[lang];
+  const { can } = useAuth();
   const [showRestock, setShowRestock] = useState(false);
   const [restockId, setRestockId] = useState<string | null>(null);
   const [restockQty, setRestockQty] = useState<number>(0);
@@ -289,25 +291,29 @@ export default function StockPage({ lang, onViewDetails }: Props) {
 
                         <td className="py-4 sm:py-5 px-4 sm:px-8">
                           <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-                             <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRestock(product);
-                                }} 
-                                className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all shadow-sm shadow-slate-200/50"
-                                title="Add Stock"
-                              >
-                                <Plus size={18} />
-                              </button>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(product);
-                                }} 
-                                className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary dark:hover:text-brand-secondary hover:border-brand-primary/30 transition-all shadow-sm shadow-slate-200/50"
-                              >
-                                <Edit2 size={16} />
-                              </button>
+                            {can('owner', 'manager') && (
+                              <>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRestock(product);
+                                  }} 
+                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all shadow-sm shadow-slate-200/50"
+                                  title="Add Stock"
+                                >
+                                  <Plus size={18} />
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(product);
+                                  }} 
+                                  className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary dark:hover:text-brand-secondary hover:border-brand-primary/30 transition-all shadow-sm shadow-slate-200/50"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -353,20 +359,22 @@ export default function StockPage({ lang, onViewDetails }: Props) {
                           <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/30 text-rose-500 dark:text-rose-400 rounded text-[8px] font-black uppercase tracking-widest border border-rose-100 dark:border-rose-900">Low</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleRestock(product); }}
-                          className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 transition-all"
-                        >
-                          <Plus size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
-                          className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary transition-all"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                      </div>
+                      {can('owner', 'manager') && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRestock(product); }}
+                            className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-emerald-500 transition-all"
+                          >
+                            <Plus size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
+                            className="h-9 w-9 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-slate-400 hover:text-brand-primary transition-all"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

@@ -50,7 +50,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
-  role: 'owner' | 'staff';
+  role: 'owner' | 'manager' | 'cashier';
   status: 'active' | 'inactive';
 }
 
@@ -58,7 +58,8 @@ interface AuthContextType {
   user: any | null;
   profile: UserProfile | null;
   loading: boolean;
-  isOwner: boolean;
+  role: string;
+  can: (...roles: string[]) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -68,7 +69,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
-  isOwner: false,
+  role: '',
+  can: () => false,
   login: async () => {},
   register: async () => {},
   signOut: async () => {},
@@ -164,7 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     profile,
     loading,
-    isOwner: profile?.role === 'owner',
+    role: profile?.role || '',
+    can: (...roles: string[]) => roles.includes(profile?.role || ''),
     login,
     register,
     signOut

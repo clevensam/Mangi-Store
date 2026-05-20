@@ -3,6 +3,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useQuery, gql } from '@apollo/client';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Calculator, Search, Calendar, ChevronDown, DollarSign, Package, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,6 +44,12 @@ const PERIOD_DROPDOWN_OPTIONS: { value: PeriodType; labelKey: 'week' | 'month' |
 
 export default function ReportsPage({ lang }: { lang: Language }) {
   const t = translations[lang];
+  const { can } = useAuth();
+
+  if (!can('owner', 'manager')) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const [period, setPeriod] = useState<PeriodType>('3months');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState('');
