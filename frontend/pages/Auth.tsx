@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { translations, type Language } from '../lib/i18n';
 import { motion } from 'motion/react';
 import { LogIn, Mail, Lock, User as UserIcon, ShieldCheck } from 'lucide-react';
@@ -15,6 +16,7 @@ interface Props {
 
 export default function AuthPage({ lang, mode = 'login' }: Props) {
   const { login, register } = useAuth();
+  const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(mode === 'register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,8 +28,9 @@ export default function AuthPage({ lang, mode = 'login' }: Props) {
     setLoading(true);
     try {
       if (isRegister) {
-        await register(email, password, displayName);
-        toast.success(lang === 'en' ? 'Account created successfully!' : 'Akaunti imeumbwa kikamilifu!');
+        const message = await register(email, password, displayName);
+        toast.success(message || (lang === 'en' ? 'Account created! Check your email for the verification code.' : 'Akaunti imeumbwa! Angalia barua pepe yako kwa msimbo wa uthibitisho.'));
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
         await login(email, password);
         toast.success(lang === 'en' ? 'Welcome back!' : 'Karibu tena!');
