@@ -4,6 +4,7 @@ import { useQuery, useMutation, gql } from '@apollo/client';
 import { toast } from 'sonner';
 import { translations, type Language } from '../lib/i18n';
 import { formatCurrency, cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, CreditCard, User, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, X, Save, ChevronRight, ArrowRightLeft, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -91,7 +92,9 @@ interface Props {
 
 export default function DebtsPage({ lang }: Props) {
   const t = translations[lang];
-  const [activeTab, setActiveTab] = useState<'payable' | 'receivable'>('payable');
+  const { can } = useAuth();
+  const isCashier = !can('owner', 'manager');
+  const [activeTab, setActiveTab] = useState<'payable' | 'receivable'>(isCashier ? 'receivable' : 'payable');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
@@ -244,17 +247,19 @@ export default function DebtsPage({ lang }: Props) {
         </div>
 
         <div className="mt-4 sm:mt-6 flex gap-2 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('payable')}
-            className={cn(
-              "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all whitespace-nowrap",
-              activeTab === 'payable'
-                ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg"
-                : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-            )}
-          >
-            {t.payable}
-          </button>
+          {!isCashier && (
+            <button
+              onClick={() => setActiveTab('payable')}
+              className={cn(
+                "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all whitespace-nowrap",
+                activeTab === 'payable'
+                  ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg"
+                  : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              )}
+            >
+              {t.payable}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('receivable')}
             className={cn(
