@@ -8,7 +8,6 @@ import { translations, type Language } from './lib/i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/Auth';
-import VerifyOtpPage from './pages/VerifyOtp';
 import DashboardPage from './pages/Dashboard';
 import SalesPage from './pages/Sales';
 import StockPage from './pages/Stock';
@@ -454,9 +453,6 @@ function MainRoutes() {
       } />
       <Route path="/register" element={
         user ? <Navigate to="/dashboard" replace /> : <AuthPage lang={(localStorage.getItem('lang') as Language) || 'en'} mode="register" />
-      } />
-      <Route path="/verify-otp" element={
-        <VerifyOtpPage lang={(localStorage.getItem('lang') as Language) || 'en'} />
       } />
       <Route path="/*" element={
         user ? <AppLayout /> : <Navigate to="/login" state={{ from: location }} replace />

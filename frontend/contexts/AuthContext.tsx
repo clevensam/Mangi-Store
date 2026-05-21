@@ -34,8 +34,14 @@ const LOGIN_MUTATION = gql`
 const REGISTER_MUTATION = gql`
   mutation Register($email: String!, $password: String!, $displayName: String!) {
     register(email: $email, password: $password, displayName: $displayName) {
-      email
-      message
+      token
+      user {
+        id
+        email
+        displayName
+        role
+        status
+      }
     }
   }
 `;
@@ -70,13 +76,11 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   role: string;
-  pendingEmail: string | null;
   can: (...roles: string[]) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<string>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   resendOtp: (email: string) => Promise<string>;
-  clearPendingEmail: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -85,13 +89,11 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   role: '',
-  pendingEmail: null,
   can: () => false,
   login: async () => {},
   register: async () => '',
   verifyOtp: async () => {},
   resendOtp: async () => '',
-  clearPendingEmail: () => {},
   signOut: async () => {},
 });
 
@@ -101,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const [getMe] = useLazyQuery(ME_QUERY, {
     client,
@@ -166,8 +167,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (data?.register) {
-      setPendingEmail(data.register.email);
-      return data.register.message;
+      localStorage.setItem('auth_token', data.register.token);
+      setUser({ id: data.register.user.id, email: data.register.user.email });
+      setProfile({
+        uid: data.register.user.id,
+        email: data.register.user.email,
+        displayName: data.register.user.displayName,
+        role: data.register.user.role,
+        status: data.register.user.status
+      });
+      return 'Account created successfully!';
     }
     return '';
   };
@@ -195,10 +204,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return '';
   };
 
-  const clearPendingEmail = () => {
-    setPendingEmail(null);
-  };
-
   const signOut = async () => {
     setUser(null);
     setProfile(null);
@@ -210,13 +215,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     role: profile?.role || '',
-    pendingEmail,
     can: (...roles: string[]) => roles.includes(profile?.role || ''),
     login,
     register,
     verifyOtp,
     resendOtp,
-    clearPendingEmail,
     signOut
   };
 

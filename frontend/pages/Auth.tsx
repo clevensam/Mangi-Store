@@ -29,8 +29,8 @@ export default function AuthPage({ lang, mode = 'login' }: Props) {
     try {
       if (isRegister) {
         const message = await register(email, password, displayName);
-        toast.success(message || (lang === 'en' ? 'Account created! Check your email for the verification code.' : 'Akaunti imeumbwa! Angalia barua pepe yako kwa msimbo wa uthibitisho.'));
-        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+        toast.success(message || (lang === 'en' ? 'Welcome to Mangi Store!' : 'Karibu kwenye Mangi Store!'));
+        navigate('/dashboard');
       } else {
         await login(email, password);
         toast.success(lang === 'en' ? 'Welcome back!' : 'Karibu tena!');
