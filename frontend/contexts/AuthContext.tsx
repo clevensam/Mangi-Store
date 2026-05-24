@@ -46,23 +46,6 @@ const REGISTER_MUTATION = gql`
   }
 `;
 
-const RESEND_OTP_MUTATION = gql`
-  mutation ResendOtp($email: String!) {
-    resendOtp(email: $email) {
-      message
-    }
-  }
-`;
-
-const VERIFY_OTP_MUTATION = gql`
-  mutation VerifyOtp($email: String!, $otp: String!) {
-    verifyOtp(email: $email, otp: $otp) {
-      success
-      message
-    }
-  }
-`;
-
 export interface UserProfile {
   uid: string;
   email: string;
@@ -79,8 +62,6 @@ interface AuthContextType {
   can: (...roles: string[]) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<string>;
-  verifyOtp: (email: string, otp: string) => Promise<void>;
-  resendOtp: (email: string) => Promise<string>;
   signOut: () => Promise<void>;
 }
 
@@ -92,8 +73,6 @@ const AuthContext = createContext<AuthContextType>({
   can: () => false,
   login: async () => {},
   register: async () => '',
-  verifyOtp: async () => {},
-  resendOtp: async () => '',
   signOut: async () => {},
 });
 
@@ -111,8 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [loginMutation] = useMutation(LOGIN_MUTATION, { client });
   const [registerMutation] = useMutation(REGISTER_MUTATION, { client });
-  const [resendOtpMutation] = useMutation(RESEND_OTP_MUTATION, { client });
-  const [verifyOtpMutation] = useMutation(VERIFY_OTP_MUTATION, { client });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -181,29 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return '';
   };
 
-  const verifyOtp = async (email: string, otp: string) => {
-    const { data } = await verifyOtpMutation({
-      variables: { email, otp },
-      context: { credentials: 'include' }
-    });
-
-    if (!data?.verifyOtp) {
-      throw new Error('Verification failed');
-    }
-  };
-
-  const resendOtp = async (email: string): Promise<string> => {
-    const { data } = await resendOtpMutation({
-      variables: { email },
-      context: { credentials: 'include' }
-    });
-
-    if (data?.resendOtp) {
-      return data.resendOtp.message;
-    }
-    return '';
-  };
-
   const signOut = async () => {
     setUser(null);
     setProfile(null);
@@ -218,8 +172,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     can: (...roles: string[]) => roles.includes(profile?.role || ''),
     login,
     register,
-    verifyOtp,
-    resendOtp,
     signOut
   };
 
