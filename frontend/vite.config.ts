@@ -6,23 +6,22 @@ import {defineConfig, loadEnv} from 'vite';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    root: 'frontend',
+    envDir: path.resolve(__dirname, '..'),
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './frontend'),
-        '@frontend': path.resolve(__dirname, './frontend'),
-        '@backend': path.resolve(__dirname, './backend'),
+        '@': path.resolve(__dirname, '.'),
+        '@frontend': path.resolve(__dirname, '.'),
       },
     },
     build: {
       outDir: '../dist',
       emptyOutDir: true,
     },
-server: {
+    server: {
       port: 5173,
       hmr: process.env.DISABLE_HMR !== 'true',
     },

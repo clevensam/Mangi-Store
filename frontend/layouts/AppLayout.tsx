@@ -1,0 +1,413 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import {
+  LayoutDashboard, ShoppingCart, Package, Receipt, Globe, ChevronLeft, ChevronRight,
+  ChevronDown, CreditCard, Users, BarChart3, Settings, Search, Bell, BrainCircuit,
+  Menu, X, LogOut
+} from 'lucide-react';
+import BrandLogo from '../../Brandlogo.svg';
+import BrandName from '../../Brandname.svg';
+import { cn } from '../lib/utils';
+import { translations, type Language } from '../lib/i18n';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../contexts/AuthContext';
+import { SalesContainer } from '../pages/sales/SalesContainer';
+import { DashboardContainer } from '../pages/dashboard/DashboardContainer';
+import { ProductsContainer } from '../pages/products/ProductsContainer';
+import { CustomersContainer } from '../pages/customers/CustomersContainer';
+import { ExpensesContainer } from '../pages/expenses/ExpensesContainer';
+import { StockContainer } from '../pages/stock/StockContainer';
+import { ReportsContainer } from '../pages/reports/ReportsContainer';
+import { DebtsContainer } from '../pages/debts/DebtsContainer';
+import { AnalysisContainer } from '../pages/analysis/AnalysisContainer';
+import { SettingsContainer } from '../pages/settings/SettingsContainer';
+import { ProductDetailsContainer } from '../pages/productdetails/ProductDetailsContainer';
+
+export function AppLayout() {
+  const { user, profile, can, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [lang, setLang] = useState<Language>(() => {
+    return (localStorage.getItem('lang') as Language) || 'en';
+  });
+
+  const t = translations[lang];
+  const currentPath = location.pathname.replace('/', '').split('/')[0];
+
+  useEffect(() => {
+    localStorage.setItem('lang', lang);
+  }, [lang]);
+
+  const navGroups = [
+    {
+      id: 'main',
+      title: lang === 'en' ? 'Main' : 'Kuu',
+      items: [
+        { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard, path: '/dashboard' },
+        { id: 'sales', label: t.sales, icon: ShoppingCart, path: '/sales' },
+        { id: 'reports', label: t.hesabu, icon: BarChart3, path: '/reports', roles: ['owner', 'manager'] },
+        { id: 'analysis', label: t.analysis, icon: BrainCircuit, path: '/analysis', roles: ['owner', 'manager'] },
+      ]
+    },
+    {
+      id: 'inventory',
+      title: lang === 'en' ? 'Inventory' : 'Hesabu',
+      items: [
+        { id: 'products', label: t.products, icon: Package, path: '/products' },
+        { id: 'stock', label: t.stock, icon: Package, path: '/stock' },
+        { id: 'expenses', label: t.expenses, icon: Receipt, path: '/expenses', roles: ['owner', 'manager'] },
+      ]
+    },
+    {
+      id: 'management',
+      title: lang === 'en' ? 'Management' : 'Usimamizi',
+      items: [
+        { id: 'debts', label: t.debts, icon: CreditCard, path: '/debts' },
+        { id: 'customers', label: t.customers, icon: Users, path: '/customers' },
+      ]
+    },
+    {
+      id: 'system',
+      title: lang === 'en' ? 'System' : 'Mfumo',
+      items: [
+        { id: 'settings', label: t.settings, icon: Settings, path: '/settings' },
+      ]
+    }
+  ];
+
+  const renderPage = () => {
+    const path = location.pathname;
+
+    if ((path === '/reports' || path === '/analysis' || path === '/expenses') && !can('owner', 'manager')) {
+      return <DashboardContainer />;
+    }
+
+    if (path.startsWith('/product/')) {
+      const productId = path.split('/product/')[1];
+      return <ProductDetailsContainer productId={productId} onBack={() => navigate(-1)} />;
+    }
+
+    switch (path) {
+      case '/dashboard': return <DashboardContainer />;
+      case '/sales': return <SalesContainer />;
+      case '/products': return <ProductsContainer onViewDetails={(id) => navigate(`/product/${id}`)} />;
+      case '/stock': return <StockContainer />;
+      case '/expenses': return <ExpensesContainer />;
+      case '/debts': return <DebtsContainer />;
+      case '/customers': return <CustomersContainer />;
+      case '/reports': return <ReportsContainer />;
+      case '/analysis': return <AnalysisContainer />;
+      case '/settings': return <SettingsContainer />;
+      default: return <DashboardContainer />;
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 overflow-hidden font-sans transition-colors duration-300">
+      {/* Desktop Sidebar */}
+      <aside className={cn(
+        "hidden md:flex bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0 z-30 transition-all duration-300 ease-in-out relative",
+        isCollapsed ? "w-[72px]" : "w-64"
+      )}>
+        <div className={cn(
+          "h-20 flex items-center border-b border-slate-50 dark:border-slate-800 transition-all duration-300",
+          "px-5"
+        )}>
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <img src={BrandLogo} alt="Mangi" className="h-10 w-10 object-contain shrink-0" />
+            {!isCollapsed && (
+              <motion.img
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                src={BrandName}
+                alt="Mangi"
+                className="h-6 object-contain"
+              />
+            )}
+          </Link>
+        </div>
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-8 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-primary hover:border-brand-primary shadow-sm transition-all z-40 hidden md:flex"
+        >
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+
+        <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto overflow-x-hidden no-scrollbar">
+          {navGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              {!isCollapsed && (
+                <h3 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-60">
+                  {group.title}
+                </h3>
+              )}
+              <div className="space-y-1">
+                {group.items
+                  .filter(item => !item.roles || can(...item.roles))
+                  .map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentPath === item.path.replace('/', '') ||
+                    (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.path}
+                      title={isCollapsed ? item.label : undefined}
+                      className={cn(
+                        "flex items-center w-full rounded-xl transition-all duration-200 group font-bold text-sm h-11",
+                        isCollapsed ? "px-2" : "px-4",
+                        isActive
+                          ? "bg-orange-50 dark:bg-orange-950/30 text-brand-primary shadow-sm shadow-orange-900/5"
+                          : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex items-center justify-center transition-all duration-300",
+                        isCollapsed ? "w-full" : "w-6 mr-3"
+                      )}>
+                        <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                      </div>
+                      {!isCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -5 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="whitespace-nowrap"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <div className="border-t border-slate-50 dark:border-slate-800 px-3 py-4">
+          <button
+            onClick={() => signOut()}
+            className={cn(
+              "flex items-center w-full rounded-xl transition-all duration-200 font-bold text-sm h-11 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20",
+              isCollapsed ? "px-2 justify-center" : "px-4"
+            )}
+          >
+            <div className={cn("flex items-center justify-center", isCollapsed ? "w-full" : "w-6 mr-3")}>
+              <LogOut size={18} />
+            </div>
+            {!isCollapsed && <span>{lang === 'en' ? 'Log Out' : 'Toka'}</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar Drawer */}
+      <AnimatePresence>
+        {showMobileSidebar && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileSidebar(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 md:hidden w-72 bg-white dark:bg-slate-900 shadow-2xl flex flex-col"
+            >
+              <div className="h-20 flex items-center px-5 border-b border-slate-50 dark:border-slate-800">
+                <Link to="/dashboard" className="flex items-center gap-3" onClick={() => setShowMobileSidebar(false)}>
+                  <img src={BrandLogo} alt="Mangi" className="h-10 w-10 object-contain shrink-0" />
+                  <img src={BrandName} alt="Mangi" className="h-6 object-contain" />
+                </Link>
+                <button
+                  onClick={() => setShowMobileSidebar(false)}
+                  className="ml-auto h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto no-scrollbar">
+                {navGroups.map((group) => (
+                  <div key={group.title} className="space-y-1">
+                    <h3 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-60">
+                      {group.title}
+                    </h3>
+                    <div className="space-y-1">
+                      {group.items
+                        .filter(item => !item.roles || can(...item.roles))
+                        .map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentPath === item.path.replace('/', '') ||
+                          (item.path !== '/' && currentPath.startsWith(item.path.replace('/', '')));
+                        return (
+                          <Link
+                            key={item.id}
+                            to={item.path}
+                            onClick={() => setShowMobileSidebar(false)}
+                            className={cn(
+                              "flex items-center w-full rounded-xl transition-all duration-200 group font-bold text-sm h-11 px-4",
+                              isActive
+                                ? "bg-orange-50 dark:bg-orange-950/30 text-brand-primary shadow-sm shadow-orange-900/5"
+                                : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
+                            )}
+                          >
+                            <div className="flex items-center justify-center w-6 mr-3">
+                              <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                            </div>
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-4">
+                <button
+                  onClick={() => { signOut(); setShowMobileSidebar(false); }}
+                  className="flex items-center w-full rounded-xl transition-all duration-200 font-bold text-sm h-11 px-4 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                >
+                  <div className="flex items-center justify-center w-6 mr-3">
+                    <LogOut size={18} />
+                  </div>
+                  <span>{lang === 'en' ? 'Log Out' : 'Toka'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Header */}
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex h-16 md:h-20 items-center justify-between px-3 sm:px-6 lg:px-8 shrink-0 relative z-30 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)] transition-colors duration-300">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <button
+              onClick={() => setShowMobileSidebar(true)}
+              className="md:hidden h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shrink-0"
+            >
+              <Menu size={20} />
+            </button>
+            <img src={BrandLogo} alt="Mangi" className="md:hidden h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0" />
+            {currentPath === 'dashboard' && (
+              <h1 className="text-lg sm:text-2xl font-black text-[#1E293B] dark:text-slate-100 tracking-tight font-sans truncate">
+                {t.dashboard}
+              </h1>
+            )}
+          </div>
+
+          <div className="hidden lg:flex flex-1 max-w-md xl:max-w-lg mx-4 xl:mx-12">
+            <div className="relative w-full group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                className="w-full h-10 xl:h-12 pl-12 pr-6 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:bg-white dark:focus:bg-slate-700 focus:border-brand-primary/20 transition-all placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-2 mr-0 sm:mr-2">
+              <button
+                onClick={() => setLang(lang === 'en' ? 'sw' : 'en')}
+                className="h-9 sm:h-10 px-2 sm:px-3 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center gap-1 sm:gap-2 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 text-xs sm:text-sm font-bold"
+              >
+                <span className="text-base sm:text-lg">{lang === 'en' ? '🇬🇧' : '🇹🇿'}</span>
+                <span className="uppercase tracking-wider hidden xs:inline">{lang === 'en' ? 'EN' : 'SW'}</span>
+              </button>
+
+              <button className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-brand-primary transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600 relative group">
+                <Bell size={16} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-800 group-hover:scale-110 transition-transform"></span>
+              </button>
+
+              <Link
+                to="/settings"
+                className="hidden sm:flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-brand-primary transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
+              >
+                <Settings size={16} />
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2 pl-2 sm:pl-4 border-l border-slate-100 dark:border-slate-800 relative">
+              <button onClick={() => navigate('/settings')} className="text-right hidden md:block cursor-pointer">
+                <p className="text-sm font-black text-slate-900 dark:text-slate-100 leading-none">
+                  {profile?.displayName || 'User'}
+                </p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                  {profile?.role === 'owner' ? t.owner : profile?.role === 'manager' ? (lang === 'en' ? 'Manager' : 'Meneja') : (lang === 'en' ? 'Cashier' : 'Keshia')}
+                </p>
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm overflow-hidden flex items-center justify-center ring-1 ring-slate-100 dark:ring-slate-700 cursor-pointer hover:ring-brand-primary/30 transition-all group shrink-0"
+                title="Settings"
+              >
+                <img
+                  src={`https://ui-avatars.com/api/?name=${profile?.displayName || 'User'}&background=random`}
+                  alt="User avatar"
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </button>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shrink-0"
+              >
+                <ChevronDown size={16} className={cn("transition-transform", showUserMenu && "rotate-180")} />
+              </button>
+
+              {showUserMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 overflow-hidden"
+                  >
+                    <button onClick={() => { navigate('/settings'); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-all">
+                      <Settings size={16} />
+                      {t.settings}
+                    </button>
+                    <div className="mx-3 my-1 border-t border-slate-50 dark:border-slate-800" />
+                    <button onClick={() => { signOut(); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all">
+                      <LogOut size={16} />
+                      {lang === 'en' ? 'Log Out' : 'Toka'}
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto pb-0 md:pb-6 relative scroll-smooth no-scrollbar">
+          <div className="w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="h-full"
+              >
+                {renderPage()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

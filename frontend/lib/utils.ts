@@ -5,10 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-TZ', {
+export function formatCurrency(
+  amount: number,
+  locale = 'en-TZ',
+  currency = 'TZS',
+): string {
+  if (amount == null || isNaN(amount)) return '—';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'TZS',
+    currency,
     minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }

@@ -1,75 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { useQuery, useMutation, gql } from '@apollo/client';
-import { toast } from 'sonner';
-import { translations, type Language } from '../lib/i18n';
-import { formatCurrency, cn } from '../lib/utils';
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { formatCurrency, cn } from '../../lib/utils';
 import { Plus, CreditCard, User, Calendar, DollarSign, Clock, CheckCircle, AlertCircle, X, Save, ChevronRight, ArrowRightLeft, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const GET_DEBTS = gql`
-  query GetDebts($type: String) {
-    debts(type: $type) {
-      id
-      type
-      customerId
-      customer {
-        id
-        name
-        phone
-      }
-      supplierName
-      amount
-      amountPaid
-      remaining
-      dueDate
-      status
-      description
-      createdAt
-    }
-  }
-`;
-
-const GET_CUSTOMERS = gql`
-  query GetCustomers {
-    customers {
-      id
-      name
-      phone
-    }
-  }
-`;
-
-const CREATE_DEBT = gql`
-  mutation CreateDebt($type: String!, $customerId: ID, $supplierName: String, $amount: Float!, $dueDate: String!, $description: String) {
-    createDebt(type: $type, customerId: $customerId, supplierName: $supplierName, amount: $amount, dueDate: $dueDate, description: $description) {
-      id
-      type
-    }
-  }
-`;
-
-const RECORD_PAYMENT = gql`
-  mutation RecordDebtPayment($debtId: ID!, $amount: Float!, $notes: String) {
-    recordDebtPayment(debtId: $debtId, amount: $amount, notes: $notes) {
-      id
-      amountPaid
-      remaining
-      status
-    }
-  }
-`;
 
 interface Debt {
   id: string;
   type: string;
   customerId: string | null;
-  customer: {
-    id: string;
-    name: string;
-    phone: string;
-  } | null;
+  customer: { id: string; name: string; phone: string } | null;
   supplierName: string | null;
   amount: number;
   amountPaid: number;
@@ -86,147 +25,67 @@ interface Customer {
   phone: string;
 }
 
-interface Props {
-  lang: Language;
+interface DebtsPresenterProps {
+  t: Record<string, string>;
+  lang: string;
+  activeTab: 'payable' | 'receivable';
+  onActiveTabChange: (tab: 'payable' | 'receivable') => void;
+  isCashier: boolean;
+  debts: Debt[];
+  loading: boolean;
+  customers: Customer[];
+  totalAmount: number;
+  totalPaid: number;
+  totalRemaining: number;
+  searchTerm: string;
+  onSearchChange: (v: string) => void;
+  showAddModal: boolean;
+  onShowAddModal: (v: boolean) => void;
+  formData: { customerId: string; supplierName: string; amount: string; dueDate: string; description: string };
+  onFormDataChange: (d: any) => void;
+  onAddDebt: () => void;
+  showPaymentModal: boolean;
+  onShowPaymentModal: (v: boolean) => void;
+  selectedDebt: Debt | null;
+  paymentAmount: string;
+  onPaymentAmountChange: (v: string) => void;
+  paymentNotes: string;
+  onPaymentNotesChange: (v: string) => void;
+  onRecordPayment: () => void;
+  onOpenPaymentModal: (debt: Debt) => void;
 }
 
-export default function DebtsPage({ lang }: Props) {
-  const t = translations[lang];
-  const { can } = useAuth();
-  const isCashier = !can('owner', 'manager');
-  const [activeTab, setActiveTab] = useState<'payable' | 'receivable'>(isCashier ? 'receivable' : 'payable');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    customerId: '',
-    supplierName: '',
-    amount: '',
-    dueDate: '',
-    description: ''
-  });
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentNotes, setPaymentNotes] = useState('');
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'paid':
+      return { class: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900', icon: CheckCircle };
+    case 'overdue':
+      return { class: 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900', icon: AlertCircle };
+    case 'partial':
+      return { class: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900', icon: Clock };
+    default:
+      return { class: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700', icon: Clock };
+  }
+};
 
-  const { data: debtsData, loading: debtsLoading, refetch } = useQuery(GET_DEBTS, {
-    variables: { type: activeTab }
-  });
+const getDaysInfo = (dueDate: string) => {
+  const today = new Date();
+  const due = new Date(dueDate);
+  const diffTime = due.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
-  const { data: customersData } = useQuery(GET_CUSTOMERS);
-
-  const [createDebt] = useMutation(CREATE_DEBT);
-  const [recordPayment] = useMutation(RECORD_PAYMENT);
-
-  const debts = debtsData?.debts as Debt[] || [];
-  const customers = customersData?.customers as Customer[] || [];
-
-  const filteredDebts = useMemo(() => {
-    return debts.filter(debt => {
-      const searchLower = searchTerm.toLowerCase();
-      const customerName = debt.customer?.name?.toLowerCase() || '';
-      const supplierName = debt.supplierName?.toLowerCase() || '';
-      return customerName.includes(searchLower) || supplierName.includes(searchLower);
-    });
-  }, [debts, searchTerm]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return { class: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900', icon: CheckCircle };
-      case 'overdue':
-        return { class: 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900', icon: AlertCircle };
-      case 'partial':
-        return { class: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900', icon: Clock };
-      default:
-        return { class: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700', icon: Clock };
-    }
-  };
-
-  const getDaysInfo = (dueDate: string) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const handleAddDebt = async () => {
-    if (!formData.amount) {
-      toast.error(lang === 'en' ? 'Amount is required' : 'Kiasi kinahitajika');
-      return;
-    }
-
-    if (activeTab === 'receivable' && !formData.customerId) {
-      toast.error(lang === 'en' ? 'Please select a customer' : 'Tafadhali chagua mteja');
-      return;
-    }
-
-    if (activeTab === 'payable' && !formData.supplierName.trim()) {
-      toast.error(lang === 'en' ? 'Supplier name is required' : 'Jina la msambazaji linahitajika');
-      return;
-    }
-
-    try {
-      await createDebt({
-        variables: {
-          type: activeTab,
-          customerId: activeTab === 'receivable' ? formData.customerId : null,
-          supplierName: activeTab === 'payable' ? formData.supplierName : null,
-          amount: parseFloat(formData.amount),
-          dueDate: formData.dueDate || null,
-          description: formData.description || null
-        }
-      });
-      toast.success(lang === 'en' ? 'Debt added successfully' : 'Deni limeongezwa kikamilifu');
-      setShowAddModal(false);
-      setFormData({ customerId: '', supplierName: '', amount: '', dueDate: '', description: '' });
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message || (lang === 'en' ? 'Failed to add debt' : 'Imeshindwa kuongeza deni'));
-    }
-  };
-
-  const handleRecordPayment = async () => {
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      toast.error(lang === 'en' ? 'Please enter a valid amount' : 'Tafadhali ingiza kiasi sahihi');
-      return;
-    }
-
-    if (selectedDebt && parseFloat(paymentAmount) > selectedDebt.remaining) {
-      toast.error(lang === 'en' ? 'Payment exceeds remaining amount' : 'Malipo yanazidi kiasi kiliobaki');
-      return;
-    }
-
-    try {
-      await recordPayment({
-        variables: {
-          debtId: selectedDebt?.id,
-          amount: parseFloat(paymentAmount),
-          notes: paymentNotes || null
-        }
-      });
-      toast.success(lang === 'en' ? 'Payment recorded successfully' : 'Malipo yamekasiriwa kikamilifu');
-      setShowPaymentModal(false);
-      setSelectedDebt(null);
-      setPaymentAmount('');
-      setPaymentNotes('');
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message || (lang === 'en' ? 'Failed to record payment' : 'Imeshindwa kurekodi malipo'));
-    }
-  };
-
-  const openPaymentModal = (debt: Debt) => {
-    setSelectedDebt(debt);
-    setPaymentAmount(debt.remaining.toString());
-    setShowPaymentModal(true);
-  };
-
-  const totalAmount = debts.reduce((sum, d) => sum + d.amount, 0);
-  const totalPaid = debts.reduce((sum, d) => sum + d.amountPaid, 0);
-  const totalRemaining = debts.reduce((sum, d) => sum + d.remaining, 0);
-
+export function DebtsPresenter({
+  t, lang, activeTab, onActiveTabChange, isCashier,
+  debts, loading, customers,
+  totalAmount, totalPaid, totalRemaining,
+  searchTerm, onSearchChange,
+  showAddModal, onShowAddModal, formData, onFormDataChange, onAddDebt,
+  showPaymentModal, onShowPaymentModal, selectedDebt,
+  paymentAmount, onPaymentAmountChange, paymentNotes, onPaymentNotesChange,
+  onRecordPayment, onOpenPaymentModal
+}: DebtsPresenterProps) {
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
       <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-0 shrink-0">
@@ -238,7 +97,7 @@ export default function DebtsPage({ lang }: Props) {
             </p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => onShowAddModal(true)}
             className="h-11 px-6 rounded-xl bg-gradient-brand text-white flex items-center gap-2 shadow-lg shadow-orange-200 dark:shadow-none active:scale-95 hover:bg-gradient-brand-dark transition-all font-semibold text-sm self-start sm:self-auto"
           >
             <Plus size={18} />
@@ -249,7 +108,7 @@ export default function DebtsPage({ lang }: Props) {
         <div className="mt-4 sm:mt-6 flex gap-2 overflow-x-auto no-scrollbar">
           {!isCashier && (
             <button
-              onClick={() => setActiveTab('payable')}
+              onClick={() => onActiveTabChange('payable')}
               className={cn(
                 "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all whitespace-nowrap",
                 activeTab === 'payable'
@@ -261,7 +120,7 @@ export default function DebtsPage({ lang }: Props) {
             </button>
           )}
           <button
-            onClick={() => setActiveTab('receivable')}
+            onClick={() => onActiveTabChange('receivable')}
             className={cn(
               "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all whitespace-nowrap",
               activeTab === 'receivable'
@@ -315,16 +174,16 @@ export default function DebtsPage({ lang }: Props) {
                   placeholder={t.searchDebt || (lang === 'en' ? 'Search by name...' : 'Tafuta kwa jina...')}
                   className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 transition-all"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => onSearchChange(e.target.value)}
                 />
               </div>
             </div>
 
-            {debtsLoading ? (
+            {loading ? (
               <div className="flex items-center justify-center py-20">
                 <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
               </div>
-            ) : filteredDebts.length === 0 ? (
+            ) : debts.length === 0 ? (
               <div className="py-12 sm:py-20 text-center">
                 <div className="inline-flex p-6 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-300 dark:text-slate-700 mb-4">
                   <CreditCard size={36} />
@@ -335,7 +194,6 @@ export default function DebtsPage({ lang }: Props) {
               </div>
             ) : (
               <>
-                {/* Desktop Table */}
                 <div className="hidden sm:block overflow-x-auto no-scrollbar">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -352,7 +210,7 @@ export default function DebtsPage({ lang }: Props) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                      {filteredDebts.map((debt) => {
+                      {debts.map((debt) => {
                         const daysInfo = getDaysInfo(debt.dueDate);
                         const statusInfo = getStatusBadge(debt.status);
                         const StatusIcon = statusInfo.icon;
@@ -413,7 +271,7 @@ export default function DebtsPage({ lang }: Props) {
                               <div className="flex items-center justify-end gap-1.5 sm:gap-2">
                                 {debt.remaining > 0 && (
                                   <button
-                                    onClick={() => openPaymentModal(debt)}
+                                    onClick={() => onOpenPaymentModal(debt)}
                                     className="h-9 sm:h-10 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-gradient-brand text-white rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:bg-gradient-brand-dark transition-all"
                                   >
                                     <ArrowRightLeft size={12} />
@@ -429,9 +287,8 @@ export default function DebtsPage({ lang }: Props) {
                   </table>
                 </div>
 
-                {/* Mobile Card View */}
                 <div className="sm:hidden divide-y divide-slate-50 dark:divide-slate-800">
-                  {filteredDebts.map((debt) => {
+                  {debts.map((debt) => {
                     const daysInfo = getDaysInfo(debt.dueDate);
                     const statusInfo = getStatusBadge(debt.status);
                     const StatusIcon = statusInfo.icon;
@@ -478,7 +335,7 @@ export default function DebtsPage({ lang }: Props) {
                           </div>
                           {debt.remaining > 0 && (
                             <button
-                              onClick={() => openPaymentModal(debt)}
+                              onClick={() => onOpenPaymentModal(debt)}
                               className="h-9 px-3 flex items-center gap-1.5 bg-gradient-brand text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gradient-brand-dark transition-all"
                             >
                               <ArrowRightLeft size={12} />
@@ -503,7 +360,7 @@ export default function DebtsPage({ lang }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => onShowAddModal(false)}
               className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-[60]"
             />
             <div className="fixed inset-0 z-[70] overflow-y-auto pointer-events-none flex items-center justify-center p-4">
@@ -521,7 +378,7 @@ export default function DebtsPage({ lang }: Props) {
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => onShowAddModal(false)}
                     className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl text-slate-400 transition-all"
                   >
                     <X size={20} />
@@ -537,7 +394,7 @@ export default function DebtsPage({ lang }: Props) {
                       <select
                         className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none appearance-none"
                         value={formData.customerId}
-                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                        onChange={(e) => onFormDataChange({ ...formData, customerId: e.target.value })}
                       >
                         <option value="">{lang === 'en' ? 'Select a customer...' : 'Chagua mteja...'}</option>
                         {customers.map((c) => (
@@ -555,7 +412,7 @@ export default function DebtsPage({ lang }: Props) {
                         className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none"
                         placeholder={lang === 'en' ? 'Enter supplier name' : 'Ingiza jina la msambazaji'}
                         value={formData.supplierName}
-                        onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })}
+                        onChange={(e) => onFormDataChange({ ...formData, supplierName: e.target.value })}
                       />
                     </div>
                   )}
@@ -569,7 +426,7 @@ export default function DebtsPage({ lang }: Props) {
                       className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none"
                       placeholder="0.00"
                       value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      onChange={(e) => onFormDataChange({ ...formData, amount: e.target.value })}
                     />
                   </div>
 
@@ -581,7 +438,7 @@ export default function DebtsPage({ lang }: Props) {
                       type="date"
                       className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none"
                       value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      onChange={(e) => onFormDataChange({ ...formData, dueDate: e.target.value })}
                     />
                   </div>
 
@@ -593,20 +450,20 @@ export default function DebtsPage({ lang }: Props) {
                       className="w-full h-24 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none resize-none"
                       placeholder={lang === 'en' ? 'Add notes (optional)' : 'Ongeza maelezo (hiari)'}
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => onFormDataChange({ ...formData, description: e.target.value })}
                     />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex gap-3">
                   <button
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => onShowAddModal(false)}
                     className="flex-1 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
                   >
                     {t.cancel}
                   </button>
                   <button
-                    onClick={handleAddDebt}
+                    onClick={onAddDebt}
                     className="flex-[2] h-14 bg-brand-primary text-white font-semibold text-sm rounded-2xl shadow-xl shadow-orange-100 dark:shadow-none hover:bg-orange-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   >
                     <Save size={18} />
@@ -626,7 +483,7 @@ export default function DebtsPage({ lang }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowPaymentModal(false)}
+              onClick={() => onShowPaymentModal(false)}
               className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-[60]"
             />
             <div className="fixed inset-0 z-[70] overflow-y-auto pointer-events-none flex items-center justify-center p-4">
@@ -644,7 +501,7 @@ export default function DebtsPage({ lang }: Props) {
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowPaymentModal(false)}
+                    onClick={() => onShowPaymentModal(false)}
                     className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl text-slate-400 transition-all"
                   >
                     <X size={20} />
@@ -677,20 +534,20 @@ export default function DebtsPage({ lang }: Props) {
                       className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none"
                       placeholder="0.00"
                       value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      onChange={(e) => onPaymentAmountChange(e.target.value)}
                       max={selectedDebt.remaining}
                     />
                     <div className="flex gap-2 mt-2">
                       <button
                         type="button"
-                        onClick={() => setPaymentAmount((selectedDebt.remaining / 2).toFixed(2))}
+                        onClick={() => onPaymentAmountChange((selectedDebt.remaining / 2).toFixed(2))}
                         className="flex-1 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                       >
                         {t.partialPayment}
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPaymentAmount(selectedDebt.remaining.toString())}
+                        onClick={() => onPaymentAmountChange(selectedDebt.remaining.toString())}
                         className="flex-1 h-10 rounded-xl bg-brand-primary text-white text-xs font-semibold hover:bg-orange-600 transition-all"
                       >
                         {t.fullPayment}
@@ -706,20 +563,20 @@ export default function DebtsPage({ lang }: Props) {
                       className="w-full h-32 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 transition-all text-slate-800 dark:text-slate-100 text-base outline-none resize-none"
                       placeholder={lang === 'en' ? 'Add payment notes (optional)' : 'Ongeza maelezo ya malipo (hiari)'}
                       value={paymentNotes}
-                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      onChange={(e) => onPaymentNotesChange(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex gap-3">
                   <button
-                    onClick={() => setShowPaymentModal(false)}
+                    onClick={() => onShowPaymentModal(false)}
                     className="flex-1 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
                   >
                     {t.cancel}
                   </button>
                   <button
-                    onClick={handleRecordPayment}
+                    onClick={onRecordPayment}
                     className="flex-[2] h-14 bg-brand-primary text-white font-semibold text-sm rounded-2xl shadow-xl shadow-orange-100 dark:shadow-none hover:bg-orange-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   >
                     <Save size={18} />

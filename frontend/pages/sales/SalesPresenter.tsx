@@ -1,115 +1,52 @@
-import React, { useState } from 'react';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { useQuery, useMutation, gql } from '@apollo/client';
-import { toast } from 'sonner';
-import { translations, type Language } from '../lib/i18n';
-import { formatCurrency, cn } from '../lib/utils';
-import { Search, Plus, Minus, CheckCircle, X, ShoppingCart, LayoutGrid, List, ShoppingBag, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { Search, LayoutGrid, List, ShoppingBag, Plus, Minus, CheckCircle, X, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
+import { type Language, translations } from '../../lib/i18n';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { type Product } from './SalesContainer';
 
-const GET_PRODUCTS = gql`
-  query GetProducts {
-    products {
-      id
-      name
-      category
-      selling_price
-      quantity
-    }
-  }
-`;
-
-const RECORD_SALE = gql`
-  mutation RecordSale($productId: ID!, $quantity: Int!, $totalPrice: Float!) {
-    recordSale(productId: $productId, quantity: $quantity, totalPrice: $totalPrice) {
-      id
-    }
-  }
-`;
-
-const CATEGORIES = ['all', 'beer', 'spirits', 'soft_drinks', 'water'] as const;
-type CategoryType = typeof CATEGORIES[number];
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  selling_price: number;
-  quantity: number;
-}
-
-interface Props {
+interface SalesPresenterProps {
   lang: Language;
+  t: (typeof translations)[Language];
+  products: Product[];
+  loading: boolean;
+  searchTerm: string;
+  onSearchChange: (v: string) => void;
+  categoryFilter: string;
+  onCategoryFilterChange: (v: any) => void;
+  categories: readonly string[];
+  viewMode: 'grid' | 'list';
+  onViewModeChange: (v: 'grid' | 'list') => void;
+  selectedProduct: Product | null;
+  onProductSelect: (p: Product) => void;
+  qty: number;
+  onQtyChange: (n: number) => void;
+  showSuccess: boolean;
+  onSaleConfirm: () => void;
+  onModalClose: () => void;
 }
 
-export default function SalesPage({ lang }: Props) {
-  const t = translations[lang];
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryType | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [qty, setQty] = useState(1);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const { loading, data, refetch } = useQuery(GET_PRODUCTS);
-  const [recordSale] = useMutation(RECORD_SALE);
-
-  const products = data?.products as Product[] || [];
-
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || p.category.toLowerCase() === categoryFilter.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleSale = async () => {
-    if (!selectedProduct) return;
-
-    if (qty > selectedProduct.quantity) {
-      toast.error(lang === 'en' 
-        ? `Insufficient stock. Only ${selectedProduct.quantity} available`
-        : `Haina kutosha. Kuna ${selectedProduct.quantity} peke yake`);
-      return;
-    }
-
-    const total = selectedProduct.selling_price * qty;
-
-    try {
-      await recordSale({
-        variables: {
-          productId: selectedProduct.id,
-          quantity: qty,
-          totalPrice: total
-        }
-      });
-
-      setSelectedProduct(null);
-      setQty(1);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2000);
-
-      toast.success(lang === 'en' ? 'Sale recorded successfully' : 'Mauzo yamefanikiwa', {
-        description: lang === 'en' ? `Sold ${qty}x ${selectedProduct.name} for ${formatCurrency(total)}` : `Umeuza ${qty}x ${selectedProduct.name} kwa ${formatCurrency(total)}`,
-        icon: <CheckCircle size={18} className="text-emerald-500" />
-      });
-      refetch();
-    } catch (err: any) {
-      const message = err?.message || 'Sale recording failed';
-      toast.error(message);
-    }
-  };
-
+export function SalesPresenter({
+  lang, t, products, loading, searchTerm, onSearchChange,
+  categoryFilter, onCategoryFilterChange, categories,
+  viewMode, onViewModeChange,
+  selectedProduct, onProductSelect, qty, onQtyChange,
+  showSuccess, onSaleConfirm, onModalClose,
+}: SalesPresenterProps) {
   const isOutOfStock = selectedProduct?.quantity === 0;
   const isInsufficientStock = qty > (selectedProduct?.quantity || 0);
   const canConfirm = selectedProduct && qty <= selectedProduct.quantity && qty > 0 && !isOutOfStock;
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden relative transition-colors duration-300">
-      {/* Header Section */}
       <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-0 shrink-0">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{t.sales}</h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{lang === 'en' ? 'Select a product to record a quick sale.' : 'Chagua bidhaa iliurekodi mauzo ya haraka.'}</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+            {lang === 'en' ? 'Select a product to record a quick sale.' : 'Chagua bidhaa iliurekodi mauzo ya haraka.'}
+          </p>
         </div>
       </div>
 
@@ -127,20 +64,20 @@ export default function SalesPage({ lang }: Props) {
                       placeholder={t.searchProducts}
                       className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:bg-white dark:focus:bg-slate-750 focus:border-brand-primary/20 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-slate-200"
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => onSearchChange(e.target.value)}
                     />
                   </div>
 
                   <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-100 dark:border-slate-800 overflow-x-auto no-scrollbar shrink-0 max-w-full">
-                    {CATEGORIES.map(cat => (
+                    {categories.map(cat => (
                       <button
                         key={cat}
-                        onClick={() => setCategoryFilter(cat)}
+                        onClick={() => onCategoryFilterChange(cat)}
                         className={cn(
-                          "px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                          'px-3 sm:px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap',
                           categoryFilter === cat
-                            ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm ring-1 ring-slate-100 dark:ring-slate-600"
-                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            ? 'bg-white dark:bg-slate-700 text-brand-primary shadow-sm ring-1 ring-slate-100 dark:ring-slate-600'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
                         )}
                       >
                         {t[cat as keyof typeof t] || cat}
@@ -152,19 +89,19 @@ export default function SalesPage({ lang }: Props) {
                 <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                   <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                     <button
-                      onClick={() => setViewMode('grid')}
+                      onClick={() => onViewModeChange('grid')}
                       className={cn(
-                        "p-2 rounded-lg transition-all",
-                        viewMode === 'grid' ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        'p-2 rounded-lg transition-all',
+                        viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-brand-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
                       )}
                     >
                       <LayoutGrid size={18} />
                     </button>
                     <button
-                      onClick={() => setViewMode('list')}
+                      onClick={() => onViewModeChange('list')}
                       className={cn(
-                        "p-2 rounded-lg transition-all",
-                        viewMode === 'list' ? "bg-white dark:bg-slate-700 text-brand-primary shadow-sm" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        'p-2 rounded-lg transition-all',
+                        viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-brand-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
                       )}
                     >
                       <List size={18} />
@@ -173,7 +110,7 @@ export default function SalesPage({ lang }: Props) {
                 </div>
               </div>
 
-              {/* Product Display */}
+              {/* Product display */}
               <div className="p-4 sm:p-6">
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
@@ -181,25 +118,25 @@ export default function SalesPage({ lang }: Props) {
                   </div>
                 ) : viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                    {filteredProducts.map((product) => {
+                    {products.map((product) => {
                       const isZeroStock = product.quantity === 0;
                       const isLowStock = product.quantity > 0 && product.quantity <= 5;
                       const iconBgClass = isZeroStock
-                        ? "bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600"
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
                         : isLowStock
-                          ? "bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-400"
-                          : "bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary";
+                          ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-400'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary';
 
                       return (
                         <button
                           key={product.id}
-                          onClick={() => !isZeroStock && setSelectedProduct(product)}
+                          onClick={() => !isZeroStock && onProductSelect(product)}
                           disabled={isZeroStock}
                           className={cn(
-                            "group relative bg-white dark:bg-slate-800/50 border rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 text-left transition-all active:scale-[0.98]",
+                            'group relative bg-white dark:bg-slate-800/50 border rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 text-left transition-all active:scale-[0.98]',
                             isZeroStock
-                              ? "border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed"
-                              : "border-slate-100 dark:border-slate-800 hover:border-brand-primary/30 dark:hover:border-brand-primary/50 hover:shadow-xl hover:shadow-orange-900/5 dark:hover:shadow-orange-950/20 cursor-pointer"
+                              ? 'border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed'
+                              : 'border-slate-100 dark:border-slate-800 hover:border-brand-primary/30 dark:hover:border-brand-primary/50 hover:shadow-xl hover:shadow-orange-900/5 dark:hover:shadow-orange-950/20 cursor-pointer',
                           )}
                         >
                           {isZeroStock && (
@@ -209,23 +146,23 @@ export default function SalesPage({ lang }: Props) {
                             </div>
                           )}
                           <div className="flex flex-col gap-3 sm:gap-4">
-                            <div className={cn("h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center transition-all", iconBgClass)}>
+                            <div className={cn('h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center transition-all', iconBgClass)}>
                               <ShoppingBag size={24} />
                             </div>
                             <div>
                               <p className={cn(
-                                "font-black text-base sm:text-lg leading-tight truncate",
-                                isZeroStock ? "text-slate-400 dark:text-slate-600" : "text-slate-800 dark:text-slate-100"
+                                'font-black text-base sm:text-lg leading-tight truncate',
+                                isZeroStock ? 'text-slate-400 dark:text-slate-600' : 'text-slate-800 dark:text-slate-100',
                               )}>
                                 {product.name}
                               </p>
                               <p className={cn(
-                                "text-[10px] font-black uppercase tracking-widest mt-1",
+                                'text-[10px] font-black uppercase tracking-widest mt-1',
                                 isZeroStock
-                                  ? "text-slate-300 dark:text-slate-600"
+                                  ? 'text-slate-300 dark:text-slate-600'
                                   : isLowStock
-                                    ? "text-amber-500 dark:text-amber-400"
-                                    : "text-slate-400 dark:text-slate-500"
+                                    ? 'text-amber-500 dark:text-amber-400'
+                                    : 'text-slate-400 dark:text-slate-500',
                               )}>
                                 {t[product.category as keyof typeof t] || product.category}
                                 {isZeroStock ? ' • Out of stock' : ` • ${product.quantity} ${lang === 'en' ? 'in stock' : 'zipo'}`}
@@ -233,16 +170,14 @@ export default function SalesPage({ lang }: Props) {
                             </div>
                             <div className="pt-3 sm:pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                               <span className={cn(
-                                "text-xs sm:text-sm font-black uppercase tracking-widest",
-                                isZeroStock ? "text-slate-300 dark:text-slate-600" : "text-slate-400 dark:text-slate-500"
+                                'text-xs sm:text-sm font-black uppercase tracking-widest',
+                                isZeroStock ? 'text-slate-300 dark:text-slate-600' : 'text-slate-400 dark:text-slate-500',
                               )}>
                                 {lang === 'en' ? 'Price' : 'Bei'}
                               </span>
                               <span className={cn(
-                                "font-bold text-lg sm:text-xl tabular-nums",
-                                isZeroStock
-                                  ? "text-slate-300 dark:text-slate-600"
-                                  : "text-brand-primary"
+                                'font-bold text-lg sm:text-xl tabular-nums',
+                                isZeroStock ? 'text-slate-300 dark:text-slate-600' : 'text-brand-primary',
                               )}>
                                 {formatCurrency(product.selling_price)}
                               </span>
@@ -264,35 +199,29 @@ export default function SalesPage({ lang }: Props) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                        {filteredProducts.map((product) => {
+                        {products.map((product) => {
                           const isZeroStock = product.quantity === 0;
-
                           return (
                             <tr
                               key={product.id}
-                              onClick={() => !isZeroStock && setSelectedProduct(product)}
+                              onClick={() => !isZeroStock && onProductSelect(product)}
                               className={cn(
-                                "group transition-colors",
-                                isZeroStock
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer"
+                                'group transition-colors',
+                                isZeroStock ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer',
                               )}
                             >
                               <td className="py-4 px-8">
                                 <div className="flex items-center gap-4">
                                   <div className={cn(
-                                    "h-10 w-10 rounded-xl flex items-center justify-center transition-colors border",
+                                    'h-10 w-10 rounded-xl flex items-center justify-center transition-colors border',
                                     isZeroStock
-                                      ? "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-700"
-                                      : "bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-100 dark:border-slate-700 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary"
+                                      ? 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-700'
+                                      : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-100 dark:border-slate-700 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-brand-primary',
                                   )}>
                                     <ShoppingBag size={18} />
                                   </div>
                                   <div>
-                                    <span className={cn(
-                                      "font-bold",
-                                      isZeroStock ? "text-slate-400 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"
-                                    )}>
+                                    <span className={cn('font-bold', isZeroStock ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100')}>
                                       {product.name}
                                     </span>
                                     {isZeroStock && (
@@ -303,30 +232,20 @@ export default function SalesPage({ lang }: Props) {
                                   </div>
                                 </div>
                               </td>
-                              <td className={cn(
-                                "py-4 px-6 text-right font-bold tabular-nums",
-                                isZeroStock
-                                  ? "text-slate-300 dark:text-slate-600"
-                                  : product.quantity <= 5
-                                    ? "text-amber-500 dark:text-amber-400"
-                                    : "text-slate-400 dark:text-slate-500"
-                              )}>
+                              <td className={cn('py-4 px-6 text-right font-bold tabular-nums', isZeroStock ? 'text-slate-300 dark:text-slate-600' : product.quantity <= 5 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500')}>
                                 {product.quantity}
                               </td>
-                              <td className={cn(
-                                "py-4 px-6 text-right font-black tabular-nums",
-                                isZeroStock ? "text-slate-300 dark:text-slate-600" : "text-slate-900 dark:text-slate-100"
-                              )}>
+                              <td className={cn('py-4 px-6 text-right font-black tabular-nums', isZeroStock ? 'text-slate-300 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100')}>
                                 {formatCurrency(product.selling_price)}
                               </td>
                               <td className="py-4 px-8 text-right">
                                 <button
                                   disabled={isZeroStock}
                                   className={cn(
-                                    "h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all active:scale-95",
+                                    'h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all active:scale-95',
                                     isZeroStock
-                                      ? "bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
-                                      : "bg-brand-primary text-white shadow-orange-100 hover:bg-orange-600"
+                                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                                      : 'bg-brand-primary text-white shadow-orange-100 hover:bg-orange-600',
                                   )}
                                 >
                                   {isZeroStock ? 'Out of Stock' : 'Record Sale'}
@@ -340,7 +259,7 @@ export default function SalesPage({ lang }: Props) {
                   </div>
                 )}
 
-                {filteredProducts.length === 0 && !loading && (
+                {products.length === 0 && !loading && (
                   <div className="py-20 text-center">
                     <div className="inline-flex p-6 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-200 dark:text-slate-700 mb-4">
                       <Search size={48} />
@@ -354,12 +273,11 @@ export default function SalesPage({ lang }: Props) {
         </div>
       </div>
 
-
-      {/* Add Item Modal */}
+      {/* Sale Modal */}
       <AnimatePresence>
         {selectedProduct && !showSuccess && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedProduct(null)} className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-40" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onModalClose} className="fixed inset-0 bg-slate-900/10 backdrop-blur-md z-40" />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -376,19 +294,18 @@ export default function SalesPage({ lang }: Props) {
                     <p className="text-xs font-bold text-brand-primary uppercase tracking-widest">{formatCurrency(selectedProduct.selling_price)} / unit</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedProduct(null)} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
+                <button onClick={onModalClose} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
                   <X size={18} />
                 </button>
               </div>
 
-              {/* Stock Info */}
               <div className={cn(
-                "flex items-center justify-between px-4 py-3 rounded-xl border",
+                'flex items-center justify-between px-4 py-3 rounded-xl border',
                 isOutOfStock
-                  ? "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900"
+                  ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900'
                   : isInsufficientStock
-                    ? "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900"
-                    : "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900"
+                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900'
+                    : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900',
               )}>
                 <div className="flex items-center gap-2">
                   {isOutOfStock ? (
@@ -399,43 +316,34 @@ export default function SalesPage({ lang }: Props) {
                     <CheckCircle size={16} className="text-emerald-500 dark:text-emerald-400" />
                   )}
                   <span className={cn(
-                    "text-xs font-black uppercase tracking-widest",
-                    isOutOfStock
-                      ? "text-rose-500 dark:text-rose-400"
-                      : isInsufficientStock
-                        ? "text-amber-500 dark:text-amber-400"
-                        : "text-emerald-600 dark:text-emerald-400"
+                    'text-xs font-black uppercase tracking-widest',
+                    isOutOfStock ? 'text-rose-500 dark:text-rose-400' : isInsufficientStock ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400',
                   )}>
                     {isOutOfStock ? 'Out of Stock' : 'Available'}
                   </span>
                 </div>
                 <span className={cn(
-                  "text-lg font-black tabular-nums",
-                  isOutOfStock
-                    ? "text-rose-500 dark:text-rose-400"
-                    : isInsufficientStock
-                      ? "text-amber-500 dark:text-amber-400"
-                      : "text-emerald-600 dark:text-emerald-400"
+                  'text-lg font-black tabular-nums',
+                  isOutOfStock ? 'text-rose-500 dark:text-rose-400' : isInsufficientStock ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400',
                 )}>
                   {selectedProduct.quantity} {lang === 'en' ? 'units' : 'begi'}
                 </span>
               </div>
 
-              {/* Quantity Selector */}
               <div className="flex flex-col items-center gap-3 py-2">
                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.quantity}</p>
                 <div className="flex items-center gap-8">
                   <button
                     disabled={qty <= 1 || isOutOfStock}
-                    onClick={() => setQty(q => Math.max(1, q - 1))}
+                    onClick={() => onQtyChange(Math.max(1, qty - 1))}
                     className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 disabled:opacity-30 active:scale-90 transition-all border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Minus size={20} />
                   </button>
                   <div className="flex flex-col items-center">
                     <span className={cn(
-                      "text-4xl font-bold min-w-[2.5rem] text-center tracking-tighter tabular-nums transition-colors",
-                      isInsufficientStock ? "text-rose-500 dark:text-rose-400" : "text-slate-800 dark:text-slate-100"
+                      'text-4xl font-bold min-w-[2.5rem] text-center tracking-tighter tabular-nums transition-colors',
+                      isInsufficientStock ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100',
                     )}>
                       {qty}
                     </span>
@@ -447,7 +355,7 @@ export default function SalesPage({ lang }: Props) {
                   </div>
                   <button
                     disabled={qty >= selectedProduct.quantity || isOutOfStock}
-                    onClick={() => setQty(q => Math.min(selectedProduct.quantity, q + 1))}
+                    onClick={() => onQtyChange(Math.min(selectedProduct.quantity, qty + 1))}
                     className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 disabled:opacity-30 active:scale-90 transition-all border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     <Plus size={20} />
@@ -459,20 +367,20 @@ export default function SalesPage({ lang }: Props) {
                 <div>
                   <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.grandTotal}</p>
                   <p className={cn(
-                    "text-2xl font-black tracking-tight tabular-nums transition-colors",
-                    isInsufficientStock ? "text-rose-500 dark:text-rose-400" : "text-slate-900 dark:text-white"
+                    'text-2xl font-black tracking-tight tabular-nums transition-colors',
+                    isInsufficientStock ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-white',
                   )}>
                     {formatCurrency(selectedProduct.selling_price * qty)}
                   </p>
                 </div>
                 <button
-                  onClick={handleSale}
+                  onClick={onSaleConfirm}
                   disabled={!canConfirm}
                   className={cn(
-                    "h-12 px-6 rounded-xl shadow-lg flex items-center gap-2 active:scale-95 transition-all text-xs font-black uppercase tracking-widest",
+                    'h-12 px-6 rounded-xl shadow-lg flex items-center gap-2 active:scale-95 transition-all text-xs font-black uppercase tracking-widest',
                     canConfirm
-                      ? "bg-brand-primary hover:bg-brand-secondary text-white shadow-orange-100"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                      ? 'bg-brand-primary hover:bg-brand-secondary text-white shadow-orange-100'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed',
                   )}
                 >
                   <ShoppingCart size={16} />
@@ -482,7 +390,6 @@ export default function SalesPage({ lang }: Props) {
             </motion.div>
           </>
         )}
-
 
         {showSuccess && (
           <motion.div
