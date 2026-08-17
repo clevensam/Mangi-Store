@@ -13,6 +13,7 @@
     "dev": "npm run dev:backend",
     "dev:all": "npm run dev -w mangistore_backend & npm run dev -w frontend",
     "start": "npm run start -w mangistore_backend",
+    "build": "npm run build -w frontend",
     "build:frontend": "npm run build -w frontend",
     "preview": "npm run preview -w frontend",
     "clean": "rm -rf dist",
