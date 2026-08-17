@@ -89,11 +89,11 @@ export function SalesPresenter({
         <div className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-4 space-y-4">
           {/* Search */}
           <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand-primary transition-colors" size={18} />
             <input
               type="text"
               placeholder={t.searchProducts}
-              className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-300 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 dark:text-slate-200"
+              className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/10 focus:bg-white dark:focus:bg-slate-800 focus:border-orange-300 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 dark:text-slate-200"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -111,7 +111,7 @@ export function SalesPresenter({
                   className={cn(
                     'flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap shrink-0 border',
                     isActive
-                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 shadow-sm'
+                      ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800 shadow-sm'
                       : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300',
                   )}
                 >
@@ -127,7 +127,7 @@ export function SalesPresenter({
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 no-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <LoadingSpinner size={48} thickness={200} speed={75} color="#10b981" secondaryColor="rgba(16, 185, 129, 0.3)" />
+              <LoadingSpinner size={48} thickness={200} speed={75} color="#f97316" secondaryColor="rgba(249, 115, 22, 0.3)" />
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -148,10 +148,10 @@ export function SalesPresenter({
                     key={product.id}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => onAddToOrder(product)}
-                    className="group relative bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-4 text-left transition-all hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-lg hover:shadow-emerald-900/5 cursor-pointer"
+                    className="group relative bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-4 text-left transition-all hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-lg hover:shadow-orange-900/5 cursor-pointer"
                   >
-                    <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 flex items-center justify-center mb-3 overflow-hidden">
-                      <ShoppingBag size={32} className="text-emerald-300 dark:text-emerald-700" strokeWidth={1.5} />
+                    <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-orange-50 to-orange-50 dark:from-orange-950/20 dark:to-orange-950/20 flex items-center justify-center mb-3 overflow-hidden">
+                      <ShoppingBag size={32} className="text-orange-300 dark:text-orange-700" strokeWidth={1.5} />
                     </div>
 
                     <p className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 min-h-[2.5rem]">
@@ -159,7 +159,7 @@ export function SalesPresenter({
                     </p>
 
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      <span className="text-base font-black text-orange-600 dark:text-orange-400 tabular-nums">
                         {formatCurrency(product.selling_price)}
                       </span>
                       {isLowStock && (
@@ -169,13 +169,13 @@ export function SalesPresenter({
                       )}
                     </div>
 
-                    <div className="mt-3 flex items-center justify-center h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm shadow-emerald-200 dark:shadow-none">
+                    <div className="mt-3 flex items-center justify-center h-9 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm shadow-orange-200 dark:shadow-none">
                       <Plus size={14} className="mr-1" />
                       {t.addToOrder}
                     </div>
 
                     {productInCart && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center shadow-md">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-orange-500 text-white text-[10px] font-black flex items-center justify-center shadow-md">
                         {productInCart.quantity}
                       </div>
                     )}
@@ -200,8 +200,8 @@ export function SalesPresenter({
                 <p className="text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{formatTime(now)}</p>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-              <User size={14} className="text-emerald-600 dark:text-emerald-400" />
+            <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center">
+              <User size={14} className="text-orange-600 dark:text-orange-400" />
             </div>
           </div>
 
@@ -209,7 +209,7 @@ export function SalesPresenter({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">{t.orderNumber}</span>
-              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">#{orderNumber}</span>
+              <span className="text-sm font-black text-orange-600 dark:text-orange-400">#{orderNumber}</span>
             </div>
             <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">
               {cart.itemCount} {t.items}
@@ -236,7 +236,7 @@ export function SalesPresenter({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-brand-primary dark:text-orange-400">
                         {CATEGORY_LABELS[item.category] || item.category}
                       </span>
                       <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{item.name}</p>
@@ -253,7 +253,7 @@ export function SalesPresenter({
                     <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700 p-0.5">
                       <button
                         onClick={() => cart.updateQuantity(item.id, item.quantity - 1)}
-                        className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all"
+                        className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all"
                       >
                         <MinusCircle size={16} />
                       </button>
@@ -262,7 +262,7 @@ export function SalesPresenter({
                       </span>
                       <button
                         onClick={() => cart.updateQuantity(item.id, item.quantity + 1)}
-                        className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all"
+                        className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all"
                       >
                         <PlusCircle size={16} />
                       </button>
@@ -305,14 +305,14 @@ export function SalesPresenter({
             )}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
               <span className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">{t.total}</span>
-              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(chargeTotal)}</span>
+              <span className="text-lg font-black text-orange-600 dark:text-orange-400 tabular-nums">{formatCurrency(chargeTotal)}</span>
             </div>
           </div>
 
           <button
             onClick={onCharge}
             disabled={cart.items.length === 0}
-            className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full h-14 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-orange-200 dark:shadow-none active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <CreditCard size={18} />
             <span>{t.charge} {formatCurrency(chargeTotal)}</span>
@@ -335,7 +335,7 @@ export function SalesPresenter({
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white dark:bg-slate-900 rounded-3xl p-10 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-5"
             >
-              <div className="w-20 h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-200 dark:shadow-none">
+              <div className="w-20 h-20 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-xl shadow-orange-200 dark:shadow-none">
                 <CheckCircle size={40} strokeWidth={2.5} />
               </div>
               <div className="text-center">
