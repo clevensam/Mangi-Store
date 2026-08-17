@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-  Search, Plus, Minus, Trash2, User, Clock, Wine, UtensilsCrossed,
-  Pizza, Fish as FishIcon, Soup, Beer, ShoppingBag, Flame, Printer,
-  CreditCard, CheckCircle, X, ChevronDown, MinusCircle, PlusCircle,
-  Package, ArrowRight,
+  Search, Plus, Trash2, User, Clock,
+  Beer, Wine, UtensilsCrossed, ShoppingBag,
+  CreditCard, CheckCircle, MinusCircle, PlusCircle,
+  Package,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
@@ -11,7 +11,6 @@ import { formatCurrency } from '../../lib/utils';
 import { type Language, translations } from '../../lib/i18n';
 import { type Product } from './SalesContainer';
 import { type CartItem } from '../../hooks/useCart';
-import { type OrderType } from './SalesContainer';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface CartReturn {
@@ -36,7 +35,6 @@ interface SalesPresenterProps {
   lang: Language;
   t: (typeof translations)[Language];
   products: Product[];
-  allProducts: Product[];
   loading: boolean;
   searchTerm: string;
   onSearchChange: (v: string) => void;
@@ -45,17 +43,8 @@ interface SalesPresenterProps {
   categories: readonly string[];
   cart: CartReturn;
   onAddToOrder: (product: Product) => void;
-  orderType: OrderType;
-  onOrderTypeChange: (v: OrderType) => void;
-  tableNumber: string;
-  onTableNumberChange: (v: string) => void;
-  customerName: string;
-  onCustomerNameChange: (v: string) => void;
   orderNumber: number;
-  onPrint: () => void;
-  onFire: () => void;
   onCharge: () => void;
-  showFireConfirm: boolean;
   showPaymentSuccess: boolean;
 }
 
@@ -66,12 +55,6 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   soft_drinks: UtensilsCrossed,
   water: UtensilsCrossed,
 };
-
-const ORDER_TYPES: { key: OrderType; labelKey: string }[] = [
-  { key: 'dine_in', labelKey: 'dineIn' },
-  { key: 'takeout', labelKey: 'takeout' },
-  { key: 'curbside', labelKey: 'curbside' },
-];
 
 const CATEGORY_LABELS: Record<string, string> = {
   beer: 'Bar',
@@ -89,14 +72,10 @@ function formatDate(date: Date) {
 }
 
 export function SalesPresenter({
-  lang, t, products, allProducts, loading, searchTerm, onSearchChange,
+  lang, t, products, loading, searchTerm, onSearchChange,
   categoryFilter, onCategoryFilterChange, categories,
   cart, onAddToOrder,
-  orderType, onOrderTypeChange,
-  tableNumber, onTableNumberChange,
-  customerName, onCustomerNameChange,
-  orderNumber, onPrint, onFire, onCharge,
-  showFireConfirm, showPaymentSuccess,
+  orderNumber, onCharge, showPaymentSuccess,
 }: SalesPresenterProps) {
   const now = new Date();
   const chargeTotal = cart.total;
@@ -171,12 +150,10 @@ export function SalesPresenter({
                     onClick={() => onAddToOrder(product)}
                     className="group relative bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-4 text-left transition-all hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-lg hover:shadow-emerald-900/5 cursor-pointer"
                   >
-                    {/* Product image placeholder / icon */}
                     <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 flex items-center justify-center mb-3 overflow-hidden">
                       <ShoppingBag size={32} className="text-emerald-300 dark:text-emerald-700" strokeWidth={1.5} />
                     </div>
 
-                    {/* Info */}
                     <p className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight line-clamp-2 min-h-[2.5rem]">
                       {product.name}
                     </p>
@@ -192,13 +169,11 @@ export function SalesPresenter({
                       )}
                     </div>
 
-                    {/* ADD button */}
                     <div className="mt-3 flex items-center justify-center h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm shadow-emerald-200 dark:shadow-none">
                       <Plus size={14} className="mr-1" />
                       {t.addToOrder}
                     </div>
 
-                    {/* Cart quantity badge */}
                     {productInCart && (
                       <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center shadow-md">
                         {productInCart.quantity}
@@ -216,8 +191,7 @@ export function SalesPresenter({
       <div className="w-[340px] lg:w-[380px] shrink-0 flex flex-col bg-white dark:bg-slate-900 overflow-hidden transition-colors duration-300">
 
         {/* Order Header */}
-        <div className="shrink-0 px-5 py-4 border-b border-slate-100 dark:border-slate-800 space-y-4">
-          {/* Date/Time + User */}
+        <div className="shrink-0 px-5 py-4 border-b border-slate-100 dark:border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-slate-300 dark:text-slate-600" />
@@ -226,60 +200,9 @@ export function SalesPresenter({
                 <p className="text-xs font-black text-slate-700 dark:text-slate-200 tabular-nums">{formatTime(now)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-                <User size={14} className="text-emerald-600 dark:text-emerald-400" />
-              </div>
+            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+              <User size={14} className="text-emerald-600 dark:text-emerald-400" />
             </div>
-          </div>
-
-          {/* Table + Customer */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest mb-1 block">{t.table}</label>
-              <div className="relative">
-                <select
-                  value={tableNumber}
-                  onChange={(e) => onTableNumberChange(e.target.value)}
-                  className="w-full h-9 pl-3 pr-8 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 appearance-none cursor-pointer"
-                >
-                  {Array.from({ length: 20 }, (_, i) => (
-                    <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                      {t.table} {String(i + 1).padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 pointer-events-none" />
-              </div>
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest mb-1 block">{t.customer}</label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => onCustomerNameChange(e.target.value)}
-                placeholder={lang === 'en' ? 'Customer name' : 'Jina la mteja'}
-                className="w-full h-9 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 placeholder:text-slate-300 dark:placeholder:text-slate-600"
-              />
-            </div>
-          </div>
-
-          {/* Order Type Buttons */}
-          <div className="grid grid-cols-3 gap-2">
-            {ORDER_TYPES.map((ot) => (
-              <button
-                key={ot.key}
-                onClick={() => onOrderTypeChange(ot.key)}
-                className={cn(
-                  'h-9 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border',
-                  orderType === ot.key
-                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-200 dark:shadow-none'
-                    : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700',
-                )}
-              >
-                {ot.labelKey === 'dineIn' ? t.dineIn : ot.labelKey === 'takeout' ? t.takeout : t.curbside}
-              </button>
-            ))}
           </div>
 
           {/* Order Number + Item Count */}
@@ -327,7 +250,6 @@ export function SalesPresenter({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    {/* Quantity Controls */}
                     <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700 p-0.5">
                       <button
                         onClick={() => cart.updateQuantity(item.id, item.quantity - 1)}
@@ -346,7 +268,6 @@ export function SalesPresenter({
                       </button>
                     </div>
 
-                    {/* Line Total */}
                     <span className="text-sm font-black text-slate-800 dark:text-slate-100 tabular-nums">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
@@ -357,9 +278,8 @@ export function SalesPresenter({
           )}
         </div>
 
-        {/* Billing + Actions */}
+        {/* Billing + Pay */}
         <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 px-5 py-4 space-y-3">
-          {/* Billing Lines */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{t.subtotal}</span>
@@ -389,27 +309,6 @@ export function SalesPresenter({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={onPrint}
-              disabled={cart.items.length === 0}
-              className="h-11 rounded-xl border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-emerald-50 dark:hover:bg-emerald-950/20 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Printer size={14} />
-              {t.print}
-            </button>
-            <button
-              onClick={onFire}
-              disabled={cart.items.length === 0}
-              className="h-11 rounded-xl bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest transition-all hover:bg-brand-dark shadow-sm shadow-orange-200 dark:shadow-none active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Flame size={14} />
-              {t.fire}
-            </button>
-          </div>
-
-          {/* Charge Button */}
           <button
             onClick={onCharge}
             disabled={cart.items.length === 0}
@@ -420,33 +319,6 @@ export function SalesPresenter({
           </button>
         </div>
       </div>
-
-      {/* ===================== FIRE CONFIRMATION OVERLAY ===================== */}
-      <AnimatePresence>
-        {showFireConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-10 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-5"
-            >
-              <div className="w-20 h-20 rounded-full bg-brand-primary text-white flex items-center justify-center shadow-xl shadow-orange-200 dark:shadow-none">
-                <Flame size={40} strokeWidth={2.5} />
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-black text-slate-800 dark:text-slate-100">{t.orderSent}</p>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t.orderSentDesc}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ===================== PAYMENT SUCCESS OVERLAY ===================== */}
       <AnimatePresence>

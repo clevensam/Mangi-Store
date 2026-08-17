@@ -5,7 +5,6 @@ import { useSales } from '../../hooks/useSales';
 import { useSearch } from '../../hooks/useSearch';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../hooks/useCart';
-import { formatCurrency } from '../../lib/utils';
 import { SalesPresenter } from './SalesPresenter';
 
 const POS_CATEGORIES = ['all', 'beer', 'spirits', 'soft_drinks', 'water'] as const;
@@ -19,8 +18,6 @@ export interface Product {
   quantity: number;
 }
 
-export type OrderType = 'dine_in' | 'takeout' | 'curbside';
-
 let orderNumberCounter = 1001;
 
 export function SalesContainer() {
@@ -29,10 +26,6 @@ export function SalesContainer() {
   const { recordSale } = useSales();
 
   const [categoryFilter, setCategoryFilter] = useState<PosCategoryType>('all');
-  const [orderType, setOrderType] = useState<OrderType>('dine_in');
-  const [tableNumber, setTableNumber] = useState('01');
-  const [customerName, setCustomerName] = useState('');
-  const [showFireConfirm, setShowFireConfirm] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
 
   const cart = useCart();
@@ -57,34 +50,19 @@ export function SalesContainer() {
     [cart, lang],
   );
 
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
-
-  const handleFire = useCallback(() => {
-    if (cart.items.length === 0) return;
-    setShowFireConfirm(true);
-    setTimeout(() => {
-      setShowFireConfirm(false);
-      toast.success(t.orderSent, { description: t.orderSentDesc });
-    }, 1500);
-  }, [cart.items.length, t]);
-
   const handleCharge = useCallback(async () => {
     if (cart.items.length === 0) return;
 
     try {
       for (const item of cart.items) {
-        if (item.quantity > item.price) {
-          const product = products.find((p) => p.id === item.productId);
-          if (product && item.quantity > product.quantity) {
-            toast.error(
-              lang === 'en'
-                ? `Insufficient stock for ${item.name}. Only ${product.quantity} available.`
-                : `Stock haipatoshi kwa ${item.name}. Kuna ${product.quantity} peke yake.`,
-            );
-            return;
-          }
+        const product = products.find((p) => p.id === item.productId);
+        if (product && item.quantity > product.quantity) {
+          toast.error(
+            lang === 'en'
+              ? `Insufficient stock for ${item.name}. Only ${product.quantity} available.`
+              : `Stock haipatoshi kwa ${item.name}. Kuna ${product.quantity} peke yake.`,
+          );
+          return;
         }
         const total = item.price * item.quantity;
         await recordSale(item.productId, item.quantity, total);
@@ -108,7 +86,6 @@ export function SalesContainer() {
       lang={lang}
       t={t}
       products={displayProducts as Product[]}
-      allProducts={products as Product[]}
       loading={loading}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
@@ -117,17 +94,8 @@ export function SalesContainer() {
       categories={POS_CATEGORIES}
       cart={cart}
       onAddToOrder={handleAddToOrder}
-      orderType={orderType}
-      onOrderTypeChange={setOrderType}
-      tableNumber={tableNumber}
-      onTableNumberChange={setTableNumber}
-      customerName={customerName}
-      onCustomerNameChange={setCustomerName}
       orderNumber={orderNumber}
-      onPrint={handlePrint}
-      onFire={handleFire}
       onCharge={handleCharge}
-      showFireConfirm={showFireConfirm}
       showPaymentSuccess={showPaymentSuccess}
     />
   );
