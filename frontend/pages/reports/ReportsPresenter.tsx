@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Calculator, ChevronLeft, ChevronRight, FileText, RefreshCw } from 'lucide-react';
+import { Calculator, ChevronLeft, ChevronRight, FileText, Plus, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 import { formatCurrency, cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { Modal } from '../../components/common/Modal';
-import type { StockRow, WeekDay, CellField } from './ReportsContainer';
+import type { StockRow, WeekDay, CellField, SaveStatus } from './ReportsContainer';
 
 const WEEKDAY_KEY = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const DAY_LABEL_KEYS: { field: CellField }[] = [
@@ -12,6 +12,14 @@ const DAY_LABEL_KEYS: { field: CellField }[] = [
   { field: 'uza' },
   { field: 'baki' },
 ];
+const CATEGORIES = ['beer', 'spirits', 'soft_drinks', 'water'] as const;
+
+interface ProductForm {
+  name: string;
+  category: string;
+  buying_price: number;
+  selling_price: number;
+}
 
 interface ReportsPresenterProps {
   t: Record<string, string>;
@@ -24,6 +32,10 @@ interface ReportsPresenterProps {
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onToday: () => void;
+  saveStatus: SaveStatus;
+  onAddProduct: (data: ProductForm) => Promise<boolean>;
+  onEditProduct: (id: string, data: ProductForm) => Promise<boolean>;
+  onDeleteProduct: (id: string) => Promise<boolean>;
 }
 
 function NumberCell({
@@ -154,9 +166,67 @@ export function ReportsPresenter({
   onPrevWeek,
   onNextWeek,
   onToday,
+  saveStatus,
+  onAddProduct,
+  onEditProduct,
+  onDeleteProduct,
 }: ReportsPresenterProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [productForm, setProductForm] = useState<ProductForm>({
+    name: '',
+    category: 'beer',
+    buying_price: 0,
+    selling_price: 0,
+  });
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const openProductForm = (product?: StockRow) => {
+    if (product) {
+      setEditingProduct({ id: product.productId, name: product.productName });
+      setProductForm({
+        name: product.productName,
+        category: product.category ?? 'beer',
+        buying_price: product.buyingPrice,
+        selling_price: product.sellingPrice,
+      });
+    } else {
+      setEditingProduct(null);
+      setProductForm({ name: '', category: 'beer', buying_price: 0, selling_price: 0 });
+    }
+    setProductModalOpen(true);
+  };
+
+  const submitProduct = async () => {
+    if (!productForm.name.trim()) return;
+    setBusy(true);
+    const data: ProductForm = {
+      name: productForm.name.trim(),
+      category: productForm.category,
+      buying_price: productForm.buying_price,
+      selling_price: productForm.selling_price,
+    };
+    const ok = editingProduct
+      ? await onEditProduct(editingProduct.id, data)
+      : await onAddProduct(data);
+    setBusy(false);
+    if (ok) {
+      setProductModalOpen(false);
+      setEditingProduct(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setConfirmingDelete(true);
+    const ok = await onDeleteProduct(deleteTarget.id);
+    setConfirmingDelete(false);
+    if (ok) setDeleteTarget(null);
+  };
 
   if (loading) {
     return <div className="flex-1 flex items-center justify-center p-8"><LoadingSpinner /></div>;
@@ -198,6 +268,25 @@ export function ReportsPresenter({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <span
+                title={t.autoSave}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors',
+                  saveStatus === 'saving'
+                    ? 'text-slate-500 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                    : saveStatus === 'error'
+                      ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-900'
+                      : saveStatus === 'saved'
+                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900'
+                        : 'text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-700',
+                )}
+              >
+                <span className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  saveStatus === 'saving' ? 'bg-slate-400 animate-pulse' : saveStatus === 'error' ? 'bg-rose-500' : saveStatus === 'saved' ? 'bg-emerald-500' : 'bg-slate-300',
+                )} />
+                {saveStatus === 'saving' ? t.saving : saveStatus === 'error' ? t.saveError : saveStatus === 'saved' ? t.saved : t.autoSave}
+              </span>
               <button
                 onClick={onPrevWeek}
                 title={t.prevWeek}
@@ -221,6 +310,13 @@ export function ReportsPresenter({
               >
                 <RefreshCw size={15} />
                 {t.today}
+              </button>
+              <button
+                onClick={() => openProductForm()}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus size={15} />
+                {t.addProduct}
               </button>
               <button
                 onClick={() => setModalOpen(true)}
@@ -296,10 +392,28 @@ export function ReportsPresenter({
                       <td
                         className={cn(
                           STICKY,
-                          'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 sm:px-4 py-2 whitespace-nowrap uppercase text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-300',
+                          'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1.5 whitespace-nowrap uppercase text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-300',
                         )}
                       >
-                        {row.productName}
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate">{row.productName}</span>
+                          <span className="inline-flex items-center gap-0.5">
+                            <button
+                              onClick={() => openProductForm(row)}
+                              title={t.editProduct}
+                              className="p-1 rounded-md text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget({ id: row.productId, name: row.productName })}
+                              title={t.deleteProduct}
+                              className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </span>
+                        </span>
                       </td>
                       {days.map((_, i) => renderDayCells(row, i))}
                     </tr>
@@ -414,6 +528,118 @@ export function ReportsPresenter({
           >
             {t.calc}
           </button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal isOpen={productModalOpen} onClose={() => setProductModalOpen(false)} size="md">
+        <Modal.Header>
+          <Modal.TitleGroup>
+            <Modal.Subtitle>{editingProduct ? editingProduct.name : t.stockSheet}</Modal.Subtitle>
+            <Modal.Title>{editingProduct ? t.editProduct : t.addProduct}</Modal.Title>
+          </Modal.TitleGroup>
+          <Modal.CloseButton onClick={() => setProductModalOpen(false)} />
+        </Modal.Header>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.productName}</label>
+              <input
+                type="text"
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
+                placeholder={t.productName}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.category}</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setProductForm({ ...productForm, category: c })}
+                    className={cn(
+                      'px-3 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border',
+                      productForm.category === c
+                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700',
+                    )}
+                  >
+                    {t[c] || c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.buyingPrice}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={productForm.buying_price}
+                  onChange={(e) => setProductForm({ ...productForm, buying_price: e.target.valueAsNumber || 0 })}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.sellingPrice}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={productForm.selling_price}
+                  onChange={(e) => setProductForm({ ...productForm, selling_price: e.target.valueAsNumber || 0 })}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setProductModalOpen(false)}
+              className="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
+            >
+              {t.cancel}
+            </button>
+            <button
+              onClick={submitProduct}
+              disabled={busy || !productForm.name.trim()}
+              className="py-3 rounded-xl bg-gradient-brand text-white font-bold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+            >
+              {editingProduct ? t.save : t.addProduct}
+            </button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} size="sm">
+        <Modal.Header>
+          <Modal.Title>{t.deleteProduct}</Modal.Title>
+          <Modal.CloseButton onClick={() => setDeleteTarget(null)} />
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
+            {t.confirmDelete} <span className="font-black text-slate-900 dark:text-white uppercase">{deleteTarget?.name}</span>
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
+            >
+              {t.cancel}
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={confirmingDelete}
+              className="py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+            >
+              {confirmingDelete ? t.saving : t.deleteProduct}
+            </button>
+          </div>
         </Modal.Footer>
       </Modal>
     </div>

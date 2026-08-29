@@ -1,17 +1,27 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useQuery, gql } from '@apollo/client';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useQuery, useMutation, gql } from '@apollo/client';
+import { toast } from 'sonner';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ReportsPresenter } from './ReportsPresenter';
 
-const WEEK_SALES = gql`
-  query WeekSales($startDate: String!, $endDate: String!) {
-    sales(startDate: $startDate, endDate: $endDate) {
-      product_id
-      quantity
-      created_at
+const STOCK_SHEET = gql`
+  query StockSheet($weekDate: String!) {
+    stockSheet(weekDate: $weekDate) {
+      productId
+      weekday
+      in
+      jumla
+      uza
+      baki
     }
+  }
+`;
+
+const SAVE_STOCK_SHEET = gql`
+  mutation SaveStockSheet($weekDate: String!, $entries: [StockEntryInput!]!) {
+    saveStockSheet(weekDate: $weekDate, entries: $entries)
   }
 `;
 
@@ -25,6 +35,8 @@ export interface DaySlot {
 export interface StockRow {
   productId: string;
   productName: string;
+  category: string;
+  buyingPrice: number;
   sellingPrice: number;
   days: DaySlot[]; // length 7, Mon=0 .. Sun=6
 }
@@ -36,6 +48,10 @@ export interface WeekDay {
 }
 
 export type CellField = 'in' | 'jumla' | 'uza' | 'baki';
+
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+const SAVE_DEBOUNCE_MS = 900;
 
 const num = (v: number): number => (Number.isFinite(v) ? v : 0);
 
@@ -75,10 +91,12 @@ export function buildEmptyDays(): DaySlot[] {
   return Array.from({ length: 7 }, () => ({ in: 0, jumla: 0, uza: 0, baki: 0 }));
 }
 
-function emptyStockRow(p: { id: string; name: string; selling_price?: number | null }): StockRow {
+function emptyStockRow(p: { id: string; name: string; selling_price?: number | null; buying_price?: number | null; category?: string | null }): StockRow {
   return {
     productId: p.id,
     productName: p.name,
+    category: p.category || '',
+    buyingPrice: num(Number(p.buying_price) || 0),
     sellingPrice: num(Number(p.selling_price) || 0),
     days: buildEmptyDays(),
   };
@@ -116,107 +134,153 @@ function applyEdit(days: DaySlot[], i: number, field: CellField, raw: number): D
 export function ReportsContainer() {
   const { t } = useLanguage();
   const { can } = useAuth();
-  const { products, loading } = useProducts();
+  const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
 
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
-  // in-memory per-week sheets, keyed by Monday ISO
+  // DB-backed in-memory sheets, keyed by Monday ISO
   const [sheets, setSheets] = useState<Record<string, Record<string, StockRow>>>({});
-  // weeks that have had DB-sourced UZA merged in (so we don't overwrite edits)
-  const [dbLoadedWeeks, setDbLoadedWeeks] = useState<Record<string, boolean>>({});
+  // weeks that have been loaded from the DB (so we never overwrite edits with a repeat fetch)
+  const [loadedWeeks, setLoadedWeeks] = useState<Record<string, boolean>>({});
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
   const weekKey = dateISO(weekStart);
   const days = useMemo(() => buildWeekDays(weekStart), [weekStart]);
 
-  // DB sales range: Monday 00:00 -> Sunday 23:59 (local)
-  const saleQuery = useMemo(() => {
-    const start = new Date(weekStart);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(weekStart);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { startDate: start.toISOString(), endDate: end.toISOString() };
-  }, [weekStart]);
+  const sheetsRef = useRef(sheets);
+  sheetsRef.current = sheets;
 
-  const { data: salesData, loading: salesLoading } = useQuery(WEEK_SALES, {
-    variables: saleQuery,
+  const { data: sheetData, loading: sheetLoading } = useQuery(STOCK_SHEET, {
+    variables: { weekDate: weekKey },
   });
 
-  // map productId -> uza[7] from DB sales for the current week
-  const weekSales = useMemo(() => {
-    const map: Record<string, number[]> = {};
-    const byIso: Record<string, number> = {};
-    days.forEach((d, i) => (byIso[d.iso] = i));
-    (salesData?.sales ?? []).forEach((s: any) => {
-      const iso = dateISO(new Date(s.created_at));
-      const dayIdx = byIso[iso];
-      if (dayIdx === undefined) return;
-      if (!map[s.product_id]) map[s.product_id] = [0, 0, 0, 0, 0, 0, 0];
-      map[s.product_id][dayIdx] += num(s.quantity);
-    });
-    return map;
-  }, [salesData, days]);
+  const [saveStockSheet] = useMutation(SAVE_STOCK_SHEET);
 
-  // seed current week sheet when products load / week changes
+  // Merge DB entries for the current week once they load (skip if already loaded / user editing)
   useEffect(() => {
+    if (sheetLoading) return;
+    if (loadedWeeks[weekKey]) return;
+    const entries = sheetData?.stockSheet ?? [];
     if (!products.length) return;
-    setSheets((prev) => {
-      if (prev[weekKey]) return prev;
-      const map: Record<string, StockRow> = {};
-      products.forEach((p) => {
-        map[p.id] = emptyStockRow(p);
-      });
-      return { ...prev, [weekKey]: map };
-    });
-  }, [products, weekKey]);
 
-  // merge DB-sourced UZA into the week sheet once sales load (skip if already merged / user edited)
-  useEffect(() => {
-    if (salesLoading || !Object.keys(weekSales).length) return;
-    if (dbLoadedWeeks[weekKey]) return;
     setSheets((prev) => {
-      const existing = prev[weekKey];
-      if (!existing) return prev;
-      const map: Record<string, StockRow> = {};
-      let changed = false;
-      for (const pid of Object.keys(existing)) {
-        const row = existing[pid];
-        const uzaArr = weekSales[pid];
-        if (!uzaArr) {
-          map[pid] = row;
-          continue;
-        }
-        const newDays = row.days.map((d, i) => {
-          const uza = num(uzaArr[i] ?? 0);
-          if (uza === num(d.uza)) return d;
-          return { ...d, uza, baki: num(d.jumla) - uza };
+      const existing = prev[weekKey] || {};
+      const merged: Record<string, StockRow> = {};
+
+      products.forEach((p) => {
+        const base = existing[p.id] || emptyStockRow(p);
+        const row: StockRow = { ...base, days: base.days.map((d) => ({ ...d })) };
+        merged[p.id] = row;
+      });
+
+      // If this week was never loaded from the DB, apply saved entries
+      if (!loadedWeeks[weekKey]) {
+        entries.forEach((e: any) => {
+          if (!merged[e.productId]) return;
+          const row = merged[e.productId];
+          const i = Math.min(6, Math.max(0, e.weekday));
+          row.days[i] = {
+            in: num(e.in),
+            jumla: num(e.jumla),
+            uza: num(e.uza),
+            baki: num(e.baki),
+          };
         });
-        map[pid] = { ...row, days: newDays };
-        changed = true;
       }
+      return { ...prev, [weekKey]: merged };
+    });
+
+    setLoadedWeeks((prev) => (prev[weekKey] ? prev : { ...prev, [weekKey]: true }));
+  }, [sheetLoading, sheetData, weekKey, products, loadedWeeks]);
+
+  // Ensure every product has a row for the current week (handles product create/delete)
+  useEffect(() => {
+    if (!products.length || !loadedWeeks[weekKey]) return;
+    setSheets((prev) => {
+      const map = { ...(prev[weekKey] || {}) };
+      let changed = false;
+      const activeIds = new Set(products.map((p) => p.id));
+      Object.keys(map).forEach((pid) => {
+        if (!activeIds.has(pid)) {
+          delete map[pid];
+          changed = true;
+        }
+      });
+      products.forEach((p) => {
+        if (!map[p.id]) {
+          map[p.id] = emptyStockRow(p);
+          changed = true;
+        }
+      });
       if (!changed) return prev;
       return { ...prev, [weekKey]: map };
     });
-    setDbLoadedWeeks((prev) => ({ ...prev, [weekKey]: true }));
-  }, [salesLoading, weekSales, weekKey, dbLoadedWeeks]);
+  }, [products, weekKey, loadedWeeks]);
 
   const rows: StockRow[] = useMemo(() => {
     const map = sheets[weekKey];
     if (!map) return [];
-    return products.map((p) => map[p.id] ?? emptyStockRow(p));
+    return propsForRows(map, products);
   }, [sheets, weekKey, products]);
+
+  const savedWeekRef = useRef<string | null>(null);
+
+  const persist = useCallback(
+    (key: string) => {
+      const map = sheetsRef.current[key];
+      if (!map) return;
+      const entries = Object.values(map).flatMap((row) =>
+        row.days.map((d, i) => ({
+          productId: row.productId,
+          weekday: i,
+          in: num(d.in),
+          jumla: num(d.jumla),
+          uza: num(d.uza),
+          baki: num(d.baki),
+        })),
+      );
+      setSaveStatus('saving');
+      saveStockSheet({ variables: { weekDate: key, entries } })
+        .then(() => {
+          savedWeekRef.current = key;
+          setSaveStatus('saved');
+        })
+        .catch(() => {
+          setSaveStatus('error');
+          toast.error(t.saveError || 'Failed to save changes');
+        });
+    },
+    [saveStockSheet, t.saveError],
+  );
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPending = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+      persist(weekKey);
+    }
+  }, [persist, weekKey]);
 
   const onCellChange = useCallback(
     (productId: string, dayIndex: number, field: CellField, raw: number) => {
       const key = weekKey;
       setSheets((prev) => {
         const map = { ...(prev[key] || {}) };
-        const row = map[productId] ? { ...map[productId], days: map[productId].days.map((d) => ({ ...d })) } : emptyStockRow({ id: productId, name: '', selling_price: 0 });
+        const row = map[productId]
+          ? { ...map[productId], days: map[productId].days.map((d) => ({ ...d })) }
+          : emptyStockRow({ id: productId, name: '', selling_price: 0 });
         row.days = applyEdit(row.days, dayIndex, field, raw);
         map[productId] = row;
         return { ...prev, [key]: map };
       });
+
+      // Debounced auto-save
+      setSaveStatus('idle');
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => persist(key), SAVE_DEBOUNCE_MS);
     },
-    [weekKey],
+    [persist, weekKey],
   );
 
   const totals = useMemo(() => {
@@ -233,29 +297,81 @@ export function ReportsContainer() {
   }, [rows]);
 
   const goPrevWeek = useCallback(() => {
+    flushPending();
     setWeekStart((s) => {
       const x = new Date(s);
       x.setDate(x.getDate() - 7);
       return x;
     });
-  }, []);
+  }, [flushPending]);
 
   const goNextWeek = useCallback(() => {
+    flushPending();
     setWeekStart((s) => {
       const x = new Date(s);
       x.setDate(x.getDate() + 7);
       return x;
     });
-  }, []);
+  }, [flushPending]);
 
-  const goToday = useCallback(() => setWeekStart(mondayOf(new Date())), []);
+  const goToday = useCallback(() => {
+    flushPending();
+    setWeekStart(mondayOf(new Date()));
+  }, [flushPending]);
+
+  const addProduct = useCallback(
+    async (data: { name: string; category: string; buying_price: number; selling_price: number }) => {
+      try {
+        await createProduct({ ...data, quantity: 0, low_stock_threshold: 5 });
+        toast.success(t.productAdded || 'Product added');
+        return true;
+      } catch {
+        toast.error(t.saveError || 'Failed to add product');
+        return false;
+      }
+    },
+    [createProduct, t.productAdded, t.saveError],
+  );
+
+  const editProduct = useCallback(
+    async (id: string, data: { name: string; category: string; buying_price: number; selling_price: number }) => {
+      try {
+        await updateProduct(id, data);
+        toast.success(t.productUpdated || 'Product updated');
+        return true;
+      } catch {
+        toast.error(t.saveError || 'Failed to update product');
+        return false;
+      }
+    },
+    [updateProduct, t.productUpdated, t.saveError],
+  );
+
+  const removeProduct = useCallback(
+    async (id: string) => {
+      try {
+        await deleteProduct(id);
+        toast.success(t.productDeleted || 'Product deleted');
+        setSheets((prev) => {
+          const map = { ...(prev[weekKey] || {}) };
+          delete map[id];
+          return { ...prev, [weekKey]: map };
+        });
+        return true;
+      } catch (err: any) {
+        toast.error(err?.message || t.deleteFailed || 'Failed to delete product');
+        return false;
+      }
+    },
+    [deleteProduct, weekKey, t.productDeleted, t.deleteFailed],
+  );
 
   if (!can('owner', 'manager')) return null;
 
   return (
     <ReportsPresenter
       t={t}
-      loading={loading || salesLoading}
+      loading={loading || (sheetLoading && !loadedWeeks[weekKey])}
       rows={rows}
       days={days}
       weekLabel={weekLabel(days)}
@@ -264,8 +380,16 @@ export function ReportsContainer() {
       onPrevWeek={goPrevWeek}
       onNextWeek={goNextWeek}
       onToday={goToday}
+      saveStatus={saveStatus}
+      onAddProduct={addProduct}
+      onEditProduct={editProduct}
+      onDeleteProduct={removeProduct}
     />
   );
+}
+
+function propsForRows(map: Record<string, StockRow>, products: any[]): StockRow[] {
+  return products.map((p) => map[p.id] ?? emptyStockRow(p));
 }
 
 function weekLabel(days: WeekDay[]): string {
