@@ -18,6 +18,15 @@ const GET_PRODUCTS = gql`
   }
 `;
 
+const GET_LATEST_BAKI = gql`
+  query LatestStockBaki {
+    latestStockBaki {
+      productId
+      baki
+    }
+  }
+`;
+
 interface Product {
   id: string;
   name: string;
@@ -35,9 +44,26 @@ export function StockContainer() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product; direction: 'asc' | 'desc' } | null>(null);
 
-  const { loading, data, error, refetch } = useQuery(GET_PRODUCTS);
+  const { loading: productsLoading, data, error, refetch } = useQuery(GET_PRODUCTS);
+  const { loading: bakiLoading, data: bakiData } = useQuery(GET_LATEST_BAKI);
 
-  const products = data?.products as Product[] || [];
+  const baseProducts = data?.products as Product[] || [];
+
+  // Override displayed stock with the latest Baki (remaining) saved on the report
+  const bakiMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    (bakiData?.latestStockBaki ?? []).forEach((b: any) => {
+      map[b.productId] = b.baki;
+    });
+    return map;
+  }, [bakiData]);
+
+  const products: Product[] = useMemo(() => {
+    return baseProducts.map((p) => ({
+      ...p,
+      quantity: bakiMap[p.id] !== undefined ? bakiMap[p.id] : p.quantity,
+    }));
+  }, [baseProducts, bakiMap]);
 
   const handleSort = (key: keyof Product) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -73,7 +99,7 @@ export function StockContainer() {
       t={t}
       products={products}
       filteredProducts={filteredAndSortedProducts}
-      loading={loading}
+      loading={productsLoading || bakiLoading}
       error={error?.message || null}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
