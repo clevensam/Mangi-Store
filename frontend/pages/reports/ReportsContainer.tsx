@@ -319,13 +319,11 @@ export function ReportsContainer() {
     setWeekStart(mondayOf(new Date()));
   }, [flushPending]);
 
-  // Lock future days of the current week (days not yet reached).
-  // Past weeks remain fully editable.
+  // Lock any day after today (not yet reached), across all weeks.
   const todayStart = startOfDay(new Date());
-  const isCurrentWeek = weekKey === dateISO(mondayOf(new Date()));
   const dayLocked = useMemo(
-    () => days.map((d) => isCurrentWeek && startOfDay(d.date) > todayStart),
-    [days, isCurrentWeek, todayStart],
+    () => days.map((d) => startOfDay(d.date) > todayStart),
+    [days, todayStart],
   );
 
   if (!can('owner', 'manager')) return null;
