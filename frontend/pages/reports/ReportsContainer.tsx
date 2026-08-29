@@ -134,7 +134,7 @@ function applyEdit(days: DaySlot[], i: number, field: CellField, raw: number): D
 export function ReportsContainer() {
   const { t } = useLanguage();
   const { can } = useAuth();
-  const { products, loading, createProduct, updateProduct, deleteProduct } = useProducts();
+  const { products, loading } = useProducts();
 
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   // DB-backed in-memory sheets, keyed by Monday ISO
@@ -319,53 +319,6 @@ export function ReportsContainer() {
     setWeekStart(mondayOf(new Date()));
   }, [flushPending]);
 
-  const addProduct = useCallback(
-    async (data: { name: string; category: string; buying_price: number; selling_price: number }) => {
-      try {
-        await createProduct({ ...data, quantity: 0, low_stock_threshold: 5 });
-        toast.success(t.productAdded || 'Product added');
-        return true;
-      } catch {
-        toast.error(t.saveError || 'Failed to add product');
-        return false;
-      }
-    },
-    [createProduct, t.productAdded, t.saveError],
-  );
-
-  const editProduct = useCallback(
-    async (id: string, data: { name: string; category: string; buying_price: number; selling_price: number }) => {
-      try {
-        await updateProduct(id, data);
-        toast.success(t.productUpdated || 'Product updated');
-        return true;
-      } catch {
-        toast.error(t.saveError || 'Failed to update product');
-        return false;
-      }
-    },
-    [updateProduct, t.productUpdated, t.saveError],
-  );
-
-  const removeProduct = useCallback(
-    async (id: string) => {
-      try {
-        await deleteProduct(id);
-        toast.success(t.productDeleted || 'Product deleted');
-        setSheets((prev) => {
-          const map = { ...(prev[weekKey] || {}) };
-          delete map[id];
-          return { ...prev, [weekKey]: map };
-        });
-        return true;
-      } catch (err: any) {
-        toast.error(err?.message || t.deleteFailed || 'Failed to delete product');
-        return false;
-      }
-    },
-    [deleteProduct, weekKey, t.productDeleted, t.deleteFailed],
-  );
-
   if (!can('owner', 'manager')) return null;
 
   return (
@@ -381,9 +334,6 @@ export function ReportsContainer() {
       onNextWeek={goNextWeek}
       onToday={goToday}
       saveStatus={saveStatus}
-      onAddProduct={addProduct}
-      onEditProduct={editProduct}
-      onDeleteProduct={removeProduct}
     />
   );
 }

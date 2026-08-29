@@ -1,8 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Calculator, ChevronLeft, ChevronRight, FileText, Plus, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
+import { Calculator, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { formatCurrency, cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { Modal } from '../../components/common/Modal';
 import type { StockRow, WeekDay, CellField, SaveStatus } from './ReportsContainer';
 
 const WEEKDAY_KEY = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -12,14 +11,6 @@ const DAY_LABEL_KEYS: { field: CellField }[] = [
   { field: 'uza' },
   { field: 'baki' },
 ];
-const CATEGORIES = ['beer', 'spirits', 'soft_drinks', 'water'] as const;
-
-interface ProductForm {
-  name: string;
-  category: string;
-  buying_price: number;
-  selling_price: number;
-}
 
 interface ReportsPresenterProps {
   t: Record<string, string>;
@@ -33,9 +24,6 @@ interface ReportsPresenterProps {
   onNextWeek: () => void;
   onToday: () => void;
   saveStatus: SaveStatus;
-  onAddProduct: (data: ProductForm) => Promise<boolean>;
-  onEditProduct: (id: string, data: ProductForm) => Promise<boolean>;
-  onDeleteProduct: (id: string) => Promise<boolean>;
 }
 
 function NumberCell({
@@ -167,66 +155,8 @@ export function ReportsPresenter({
   onNextWeek,
   onToday,
   saveStatus,
-  onAddProduct,
-  onEditProduct,
-  onDeleteProduct,
 }: ReportsPresenterProps) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [productModalOpen, setProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<{ id: string; name: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [productForm, setProductForm] = useState<ProductForm>({
-    name: '',
-    category: 'beer',
-    buying_price: 0,
-    selling_price: 0,
-  });
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
-
-  const openProductForm = (product?: StockRow) => {
-    if (product) {
-      setEditingProduct({ id: product.productId, name: product.productName });
-      setProductForm({
-        name: product.productName,
-        category: product.category ?? 'beer',
-        buying_price: product.buyingPrice,
-        selling_price: product.sellingPrice,
-      });
-    } else {
-      setEditingProduct(null);
-      setProductForm({ name: '', category: 'beer', buying_price: 0, selling_price: 0 });
-    }
-    setProductModalOpen(true);
-  };
-
-  const submitProduct = async () => {
-    if (!productForm.name.trim()) return;
-    setBusy(true);
-    const data: ProductForm = {
-      name: productForm.name.trim(),
-      category: productForm.category,
-      buying_price: productForm.buying_price,
-      selling_price: productForm.selling_price,
-    };
-    const ok = editingProduct
-      ? await onEditProduct(editingProduct.id, data)
-      : await onAddProduct(data);
-    setBusy(false);
-    if (ok) {
-      setProductModalOpen(false);
-      setEditingProduct(null);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    setConfirmingDelete(true);
-    const ok = await onDeleteProduct(deleteTarget.id);
-    setConfirmingDelete(false);
-    if (ok) setDeleteTarget(null);
-  };
 
   if (loading) {
     return <div className="flex-1 flex items-center justify-center p-8"><LoadingSpinner /></div>;
@@ -311,20 +241,6 @@ export function ReportsPresenter({
                 <RefreshCw size={15} />
                 {t.today}
               </button>
-              <button
-                onClick={() => openProductForm()}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
-              >
-                <Plus size={15} />
-                {t.addProduct}
-              </button>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-brand text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
-              >
-                <FileText size={15} />
-                {t.showCalculation}
-              </button>
             </div>
           </div>
         </div>
@@ -392,28 +308,10 @@ export function ReportsPresenter({
                       <td
                         className={cn(
                           STICKY,
-                          'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 sm:px-3 py-1.5 whitespace-nowrap uppercase text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-300',
+                          'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 sm:px-4 py-2 whitespace-nowrap uppercase text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-300',
                         )}
                       >
-                        <span className="flex items-center gap-1.5">
-                          <span className="truncate">{row.productName}</span>
-                          <span className="inline-flex items-center gap-0.5">
-                            <button
-                              onClick={() => openProductForm(row)}
-                              title={t.editProduct}
-                              className="p-1 rounded-md text-slate-400 hover:text-brand-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            >
-                              <Pencil size={13} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget({ id: row.productId, name: row.productName })}
-                              title={t.deleteProduct}
-                              className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </span>
-                        </span>
+                        {row.productName}
                       </td>
                       {days.map((_, i) => renderDayCells(row, i))}
                     </tr>
@@ -466,182 +364,6 @@ export function ReportsPresenter({
           </div>
         </div>
       </div>
-
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="xl">
-        <Modal.Header>
-          <Modal.TitleGroup>
-            <Modal.Subtitle>{weekLabel}</Modal.Subtitle>
-            <Modal.Title>{t.showCalculation}</Modal.Title>
-          </Modal.TitleGroup>
-          <Modal.CloseButton onClick={() => setModalOpen(false)} />
-        </Modal.Header>
-        <Modal.Body>
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/60">
-                  <th className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.product}</th>
-                  <th className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.unitPrice}</th>
-                  {days.map((day, i) => (
-                    <th key={day.iso} className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
-                      {t[WEEKDAY_KEY[i]]}
-                    </th>
-                  ))}
-                  <th className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-[10px] font-black text-orange-500 uppercase tracking-widest text-right">{t.subtotal}</th>
-                  <th className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.cumulative}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const subtotalRow = row.days.reduce((s, d) => s + num(row.sellingPrice) * num(d.uza), 0);
-                  const cumulative = rows
-                    .slice(0, rows.indexOf(row) + 1)
-                    .reduce((s, r) => s + r.days.reduce((ss, d) => ss + num(r.sellingPrice) * num(d.uza), 0), 0);
-                  return (
-                    <tr key={row.productId}>
-                      <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 font-bold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">{row.productName}</td>
-                      <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-right text-sm font-semibold text-slate-500 tabular-nums">{formatCurrency(row.sellingPrice)}</td>
-                      {row.days.map((d, i) => (
-                        <td key={i} className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
-                          {num(d.uza).toLocaleString()}
-                        </td>
-                      ))}
-                      <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-right text-sm font-bold text-brand-primary tabular-nums">{formatCurrency(num(subtotalRow))}</td>
-                      <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-right text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">{formatCurrency(num(cumulative))}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="bg-slate-50 dark:bg-slate-800/60">
-                  <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-sm font-black text-slate-900 dark:text-slate-100" colSpan={2}>{t.grandTotal}</td>
-                  <td className="border border-slate-200 dark:border-slate-700 px-2 py-2 text-right text-sm font-black text-brand-primary tabular-nums" colSpan={9}>{formatCurrency(totals.grand)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            onClick={() => setModalOpen(false)}
-            className="w-full py-3 rounded-xl bg-gradient-brand text-white font-bold shadow-md text-sm hover:shadow-lg transition-all"
-          >
-            {t.calc}
-          </button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal isOpen={productModalOpen} onClose={() => setProductModalOpen(false)} size="md">
-        <Modal.Header>
-          <Modal.TitleGroup>
-            <Modal.Subtitle>{editingProduct ? editingProduct.name : t.stockSheet}</Modal.Subtitle>
-            <Modal.Title>{editingProduct ? t.editProduct : t.addProduct}</Modal.Title>
-          </Modal.TitleGroup>
-          <Modal.CloseButton onClick={() => setProductModalOpen(false)} />
-        </Modal.Header>
-        <Modal.Body>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.productName}</label>
-              <input
-                type="text"
-                value={productForm.name}
-                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
-                placeholder={t.productName}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.category}</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setProductForm({ ...productForm, category: c })}
-                    className={cn(
-                      'px-3 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border',
-                      productForm.category === c
-                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-700',
-                    )}
-                  >
-                    {t[c] || c}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.buyingPrice}</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={productForm.buying_price}
-                  onChange={(e) => setProductForm({ ...productForm, buying_price: e.target.valueAsNumber || 0 })}
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t.sellingPrice}</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={productForm.selling_price}
-                  onChange={(e) => setProductForm({ ...productForm, selling_price: e.target.valueAsNumber || 0 })}
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/20 font-bold text-slate-800 dark:text-slate-100 text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setProductModalOpen(false)}
-              className="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
-            >
-              {t.cancel}
-            </button>
-            <button
-              onClick={submitProduct}
-              disabled={busy || !productForm.name.trim()}
-              className="py-3 rounded-xl bg-gradient-brand text-white font-bold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-            >
-              {editingProduct ? t.save : t.addProduct}
-            </button>
-          </div>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} size="sm">
-        <Modal.Header>
-          <Modal.Title>{t.deleteProduct}</Modal.Title>
-          <Modal.CloseButton onClick={() => setDeleteTarget(null)} />
-        </Modal.Header>
-        <Modal.Body>
-          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">
-            {t.confirmDelete} <span className="font-black text-slate-900 dark:text-white uppercase">{deleteTarget?.name}</span>
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setDeleteTarget(null)}
-              className="py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors"
-            >
-              {t.cancel}
-            </button>
-            <button
-              onClick={confirmDelete}
-              disabled={confirmingDelete}
-              className="py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-            >
-              {confirmingDelete ? t.saving : t.deleteProduct}
-            </button>
-          </div>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 }
