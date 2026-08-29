@@ -42,7 +42,11 @@ function NumberCell({
       min={0}
       value={Number.isFinite(value) ? value : 0}
       readOnly={readOnly}
-      onChange={(e) => onChange && onChange(e.target.value === '' ? NaN : e.target.valueAsNumber)}
+      onChange={(e) => {
+        if (!onChange) return;
+        const raw = e.target.value === '' ? NaN : e.target.valueAsNumber;
+        onChange(Number.isFinite(raw) ? Math.max(0, raw) : NaN);
+      }}
       className={cn(
         'w-[46px] min-w-[46px] max-w-[46px] bg-transparent px-0 py-1.5 text-right text-xs sm:text-sm font-semibold tabular-nums focus:outline-none focus:bg-brand-primary/5 transition-colors rounded',
         readOnly

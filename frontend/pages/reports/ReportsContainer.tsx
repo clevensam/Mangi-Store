@@ -103,29 +103,29 @@ function emptyStockRow(p: { id: string; name: string; selling_price?: number | n
 }
 
 function applyEdit(days: DaySlot[], i: number, field: CellField, raw: number): DaySlot[] {
-  const v = num(raw);
+  const v = Math.max(0, num(raw));
   const next = days.map((d) => ({ ...d }));
   const d = next[i];
 
   if (field === 'in') {
     d.in = v;
     d.jumla = v + (i > 0 ? num(next[i - 1].baki) : 0);
-    d.baki = num(d.jumla) - num(d.uza);
+    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
   } else if (field === 'uza') {
     d.uza = v;
-    d.baki = num(d.jumla) - num(d.uza);
+    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
   } else if (field === 'baki') {
     d.baki = v;
-    d.uza = num(d.jumla) - num(d.baki);
+    d.uza = Math.max(0, num(d.jumla) - num(d.baki));
   } else if (field === 'jumla') {
     d.jumla = v;
-    d.baki = num(d.jumla) - num(d.uza);
+    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
   }
 
   // cascade forward: jumla[i+1] = in[i+1] + baki[i]
   for (let j = i + 1; j < 7; j++) {
-    next[j].jumla = num(next[j].in) + num(next[j - 1].baki);
-    next[j].baki = num(next[j].jumla) - num(next[j].uza);
+    next[j].jumla = Math.max(0, num(next[j].in) + num(next[j - 1].baki));
+    next[j].baki = Math.max(0, num(next[j].jumla) - num(next[j].uza));
   }
 
   return next;
