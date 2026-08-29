@@ -321,23 +321,13 @@ export function ProductsPresenter({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t.currentStock}</label>
-                      <input
-                        type="number"
-                        className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 font-bold text-slate-800 dark:text-slate-100 text-base outline-none transition-all"
-                        value={formData.quantity} onChange={e => onFormDataChange({...formData, quantity: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t.lowStockAlert}</label>
-                      <input
-                        type="number"
-                        className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 font-bold text-slate-800 dark:text-slate-100 text-base outline-none transition-all"
-                        value={formData.low_stock_threshold} onChange={e => onFormDataChange({...formData, low_stock_threshold: Number(e.target.value)})}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t.lowStockAlert}</label>
+                    <input
+                      type="number"
+                      className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary/30 font-bold text-slate-800 dark:text-slate-100 text-base outline-none transition-all"
+                      value={formData.low_stock_threshold} onChange={e => onFormDataChange({...formData, low_stock_threshold: Number(e.target.value)})}
+                    />
                   </div>
 
                   <div className="space-y-3">

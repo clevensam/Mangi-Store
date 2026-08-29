@@ -20,8 +20,8 @@ const GET_PRODUCTS = gql`
 `;
 
 const CREATE_PRODUCT = gql`
-  mutation CreateProduct($name: String!, $category: String!, $buying_price: Float!, $selling_price: Float!, $quantity: Int!, $low_stock_threshold: Int!) {
-    createProduct(name: $name, category: $category, buying_price: $buying_price, selling_price: $selling_price, quantity: $quantity, low_stock_threshold: $low_stock_threshold) {
+  mutation CreateProduct($name: String!, $category: String!, $buying_price: Float!, $selling_price: Float!, $low_stock_threshold: Int!) {
+    createProduct(name: $name, category: $category, buying_price: $buying_price, selling_price: $selling_price, low_stock_threshold: $low_stock_threshold) {
       id
       name
     }
@@ -29,8 +29,8 @@ const CREATE_PRODUCT = gql`
 `;
 
 const UPDATE_PRODUCT = gql`
-  mutation UpdateProduct($id: ID!, $name: String, $category: String, $buying_price: Float, $selling_price: Float, $quantity: Int, $low_stock_threshold: Int) {
-    updateProduct(id: $id, name: $name, category: $category, buying_price: $buying_price, selling_price: $selling_price, quantity: $quantity, low_stock_threshold: $low_stock_threshold) {
+  mutation UpdateProduct($id: ID!, $name: String, $category: String, $buying_price: Float, $selling_price: Float, $low_stock_threshold: Int) {
+    updateProduct(id: $id, name: $name, category: $category, buying_price: $buying_price, selling_price: $selling_price, low_stock_threshold: $low_stock_threshold) {
       id
       name
     }
@@ -74,7 +74,6 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
     category: 'beer',
     buying_price: 0,
     selling_price: 0,
-    quantity: 0,
     low_stock_threshold: 5
   });
 
@@ -113,7 +112,6 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
             category: formData.category,
             buying_price: formData.buying_price,
             selling_price: formData.selling_price,
-            quantity: formData.quantity,
             low_stock_threshold: formData.low_stock_threshold
           }
         });
@@ -125,7 +123,6 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
             category: formData.category,
             buying_price: formData.buying_price,
             selling_price: formData.selling_price,
-            quantity: formData.quantity,
             low_stock_threshold: formData.low_stock_threshold
           }
         });
@@ -134,7 +131,7 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
 
       setShowAdd(false);
       setEditingId(null);
-      setFormData({ name: '', category: 'beer', buying_price: 0, selling_price: 0, quantity: 0, low_stock_threshold: 5 });
+      setFormData({ name: '', category: 'beer', buying_price: 0, selling_price: 0, low_stock_threshold: 5 });
       refetch();
     } catch (error: any) {
       const message = error?.message || '';
@@ -152,7 +149,6 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
       category: p.category,
       buying_price: p.buying_price,
       selling_price: p.selling_price,
-      quantity: p.quantity,
       low_stock_threshold: p.low_stock_threshold
     });
     setEditingId(p.id);
@@ -190,7 +186,7 @@ export function ProductsContainer({ onViewDetails }: ProductsContainerProps) {
       onFormDataChange={setFormData}
       onAddNew={() => {
         setEditingId(null);
-        setFormData({ name: '', category: 'beer', buying_price: 0, selling_price: 0, quantity: 0, low_stock_threshold: 5 });
+        setFormData({ name: '', category: 'beer', buying_price: 0, selling_price: 0, low_stock_threshold: 5 });
         setShowAdd(true);
       }}
       onEdit={handleEdit}
