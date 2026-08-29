@@ -1,153 +1,214 @@
-import React from 'react';
-import { Calculator, Search, Calendar, ChevronDown, DollarSign, Package, TrendingUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState } from 'react';
+import { Calculator, Calendar, FileText } from 'lucide-react';
 import { formatCurrency, cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { Modal } from '../../components/common/Modal';
+import type { StockRow, DateKey } from './ReportsContainer';
 
-type PeriodType = 'today' | 'custom' | 'week' | 'month' | '3months' | '6months';
-
-const QUICK_OPTIONS: { value: PeriodType; labelKey: 'today' | 'date' }[] = [
-  { value: 'today', labelKey: 'today' },
-  { value: 'custom', labelKey: 'date' },
-];
-
-const PERIOD_DROPDOWN_OPTIONS: { value: PeriodType; labelKey: 'week' | 'month' | 'threeMonths' | 'sixMonths' }[] = [
-  { value: 'week', labelKey: 'week' },
-  { value: 'month', labelKey: 'month' },
-  { value: '3months', labelKey: 'threeMonths' },
-  { value: '6months', labelKey: 'sixMonths' },
-];
+type CellField = 'in' | 'jumla' | 'uza' | 'baki';
 
 interface ReportsPresenterProps {
   t: Record<string, string>;
-  lang: string;
   loading: boolean;
-  filteredProducts: any[];
-  totals: { totalRevenue: number; totalQuantity: number; totalProfit: number };
-  searchTerm: string;
-  onSearchChange: (v: string) => void;
-  period: PeriodType;
-  onPeriodChange: (v: PeriodType) => void;
-  selectedDate: string;
-  onDateChange: (v: string) => void;
+  rows: StockRow[];
+  date1: string;
+  date2: string;
+  onDate1Change: (v: string) => void;
+  onDate2Change: (v: string) => void;
+  onCellChange: (productId: string, dateKey: DateKey, field: CellField, raw: number) => void;
+  totals: { calc1: number; calc2: number; grand: number };
+}
+
+function DatePicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+      <Calendar size={14} className="text-slate-400" />
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="bg-transparent text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+        />
+      </div>
+    </div>
+  );
+}
+
+function NumberCell({
+  value,
+  onChange,
+  readOnly,
+  accent,
+}: {
+  value: number;
+  onChange?: (v: number) => void;
+  readOnly?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      min={0}
+      value={Number.isFinite(value) ? value : 0}
+      readOnly={readOnly}
+      onChange={(e) => onChange && onChange(e.target.value === '' ? NaN : e.target.valueAsNumber)}
+      className={cn(
+        'w-full min-w-[64px] rounded-lg px-2 py-1.5 text-right text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 transition-colors',
+        readOnly
+          ? accent
+            ? 'bg-orange-50 dark:bg-orange-950/30 text-brand-primary dark:text-orange-300 cursor-default'
+            : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-default'
+          : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-brand-primary/20 focus:border-brand-primary/40',
+      )}
+    />
+  );
 }
 
 export function ReportsPresenter({
-  t, loading, filteredProducts, totals, searchTerm, onSearchChange,
-  period, onPeriodChange, selectedDate, onDateChange
+  t,
+  loading,
+  rows,
+  date1,
+  date2,
+  onDate1Change,
+  onDate2Change,
+  onCellChange,
+  totals,
 }: ReportsPresenterProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+
   if (loading) {
     return <div className="flex-1 flex items-center justify-center p-8"><LoadingSpinner /></div>;
   }
 
+  const renderDayCells = (dateKey: DateKey, row: StockRow) => {
+    const d = dateKey === 'date1' ? '1' : '2';
+    const val = (field: 'in' | 'jumla' | 'uza' | 'baki') => row[`${field}${d}` as keyof StockRow] as number;
+    const calc = dateKey === 'date1'
+      ? Number(row.sellingPrice) * Number(row.uza1)
+      : Number(row.sellingPrice) * Number(row.uza2);
+
+    return (
+      <React.Fragment key={`${dateKey}-${row.productId}`}>
+        <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+          <NumberCell value={val('in')} onChange={(v) => onCellChange(row.productId, dateKey, 'in', v)} />
+        </td>
+        <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+          <NumberCell value={val('jumla')} onChange={(v) => onCellChange(row.productId, dateKey, 'jumla', v)} />
+        </td>
+        <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+          <NumberCell value={val('uza')} onChange={(v) => onCellChange(row.productId, dateKey, 'uza', v)} />
+        </td>
+        <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+          <NumberCell value={val('baki')} onChange={(v) => onCellChange(row.productId, dateKey, 'baki', v)} />
+        </td>
+        <td className="py-2 sm:py-3 px-1.5 sm:px-2">
+          <NumberCell value={num(calc)} readOnly accent />
+        </td>
+      </React.Fragment>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
       <div className="pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 pb-4 shrink-0">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 sm:gap-3 mb-1">
-            <div className="p-1.5 sm:p-2 bg-gradient-brand rounded-xl shadow-lg shadow-orange-200 dark:shadow-none"><Calculator size={20} className="text-white" /></div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-100">{t.hesabu}</h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Track your sales and profits</p>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-gradient-brand rounded-xl shadow-lg shadow-orange-200 dark:shadow-none">
+                <Calculator size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t.stockSheet}</h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{t.stockSheetSubtitle}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <DatePicker label={t.dateFrom} value={date1} onChange={onDate1Change} />
+              <DatePicker label={t.dateTo} value={date2} onChange={onDate2Change} />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 pb-4 shrink-0">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3"><div className="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-lg"><DollarSign size={16} /></div></div>
-            <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">{t.totalSales}</p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{formatCurrency(totals.totalRevenue)}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3"><div className="p-1.5 sm:p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 rounded-lg"><Package size={16} /></div></div>
-            <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">{t.totalSold}</p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{totals.totalQuantity.toLocaleString()}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3"><div className="p-1.5 sm:p-2 bg-orange-50 dark:bg-orange-950/30 text-brand-primary rounded-lg"><TrendingUp size={16} /></div></div>
-            <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">{t.netProfit}</p>
-            <p className={`text-xl sm:text-2xl font-bold mt-1 ${totals.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatCurrency(totals.totalProfit)}</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto pt-4 px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1400px] mx-auto">
           <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-            <div className="p-4 sm:p-6 border-b border-slate-50 dark:border-slate-800">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-                <div className="relative flex-1 max-w-full sm:max-w-sm">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input type="text" placeholder={t.searchProductName} className="w-full h-11 pl-11 pr-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-primary/5 focus:bg-white dark:focus:bg-slate-750 focus:border-brand-primary/20 transition-all" value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} />
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {QUICK_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => onPeriodChange(opt.value)} className={cn("px-3 sm:px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition-all", period === opt.value ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900" : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700")}>
-                      {t[opt.labelKey]}
-                    </button>
-                  ))}
-                  <div className="relative">
-                    <select value={PERIOD_DROPDOWN_OPTIONS.some(o => o.value === period) ? period : ''} onChange={(e) => { if (e.target.value) onPeriodChange(e.target.value as PeriodType); }} className="appearance-none pl-3 sm:pl-4 pr-8 sm:pr-10 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 cursor-pointer">
-                      {!PERIOD_DROPDOWN_OPTIONS.some(o => o.value === period) && (<option value="" disabled>{period === 'today' ? t.today : t.date}</option>)}
-                      {PERIOD_DROPDOWN_OPTIONS.map(opt => (<option key={opt.value} value={opt.value}>{t[opt.labelKey]}</option>))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-              <AnimatePresence>
-                {period === 'custom' && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <div className="relative max-w-[200px]">
-                        <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="date" value={selectedDate} onChange={(e) => onDateChange(e.target.value)} className="w-full pl-9 sm:pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-slate-700 dark:text-slate-300" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+              <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                {t.calcDesc}
+              </p>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-brand text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
+              >
+                <FileText size={16} />
+                {t.showCalculation}
+              </button>
             </div>
 
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-50 dark:border-slate-800">
-                    <th className="py-4 sm:py-6 px-3 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">#</th>
-                    <th className="py-4 sm:py-6 px-3 sm:px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t.product}</th>
-                    <th className="py-4 sm:py-6 px-3 sm:px-6 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">{t.quantity}</th>
-                    <th className="py-4 sm:py-6 px-3 sm:px-8 text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">{t.revenue}</th>
+                    <th rowSpan={2} className="py-3 px-3 sm:px-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-left align-bottom">{t.product}</th>
+                    <th colSpan={5} className="py-3 px-2 text-center text-sm font-black text-slate-900 dark:text-slate-100 border-l border-slate-100 dark:border-slate-800 bg-orange-50/50 dark:bg-orange-950/10">
+                      {date1}
+                    </th>
+                    <th colSpan={5} className="py-3 px-2 text-center text-sm font-black text-slate-900 dark:text-slate-100 border-l border-slate-100 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-950/10">
+                      {date2}
+                    </th>
+                  </tr>
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right border-l border-slate-100 dark:border-slate-800">{t.ingizo}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.jumla}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.uza}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.baki}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-orange-500 uppercase tracking-widest text-right">{t.calc}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right border-l border-slate-100 dark:border-slate-800">{t.ingizo}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.jumla}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.uza}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">{t.baki}</th>
+                    <th className="py-2 px-2 text-[10px] font-black text-orange-500 uppercase tracking-widest text-right">{t.calc}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {filteredProducts.length === 0 ? (
-                    <tr><td colSpan={4} className="py-12 sm:py-16 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">{t.noSalesFound}</td></tr>
+                  {rows.length === 0 ? (
+                    <tr><td colSpan={11} className="py-12 sm:py-16 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">{t.noProducts}</td></tr>
                   ) : (
-                    <AnimatePresence mode="popLayout">
-                      {filteredProducts.map((item: any, index: number) => (
-                        <motion.tr layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key={item.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                          <td className="py-4 sm:py-6 px-3 sm:px-8"><span className="text-xs sm:text-sm font-semibold text-slate-400">{index + 1}</span></td>
-                          <td className="py-4 sm:py-6 px-3 sm:px-6"><span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">{item.productName}</span></td>
-                          <td className="py-4 sm:py-6 px-3 sm:px-6 text-right font-bold text-slate-700 dark:text-slate-300 tabular-nums text-sm sm:text-base">{item.totalQuantity.toLocaleString()}</td>
-                          <td className="py-4 sm:py-6 px-3 sm:px-8 text-right font-black text-brand-primary tabular-nums text-sm sm:text-base">{formatCurrency(item.totalRevenue)}</td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
+                    rows.map((row) => (
+                      <tr key={row.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="py-2 sm:py-3 px-3 sm:px-6">
+                          <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 whitespace-nowrap">{row.productName}</span>
+                        </td>
+                        {renderDayCells('date1', row)}
+                        {renderDayCells('date2', row)}
+                      </tr>
+                    ))
                   )}
                 </tbody>
-                {filteredProducts.length > 0 && (
+                {rows.length > 0 && (
                   <tfoot>
-                    <tr className="bg-slate-50 dark:bg-slate-800/50">
-                      <td className="py-4 sm:py-6 px-3 sm:px-8 text-[11px] font-black text-slate-500 uppercase tracking-wider" colSpan={2}>{t.grandTotal}</td>
-                      <td className="py-4 sm:py-6 px-3 sm:px-6 text-right text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{totals.totalQuantity.toLocaleString()}</td>
-                      <td className="py-4 sm:py-6 px-3 sm:px-8 text-right text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">{formatCurrency(totals.totalRevenue)}</td>
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                      <td className="py-3 px-3 sm:px-6 text-[11px] font-black text-slate-500 uppercase tracking-wider" colSpan={1}>{t.calc}</td>
+                      <td className="py-3 px-2 font-black text-brand-primary text-sm tabular-nums text-right" colSpan={4}>
+                        {date1}: {formatCurrency(totals.calc1)}
+                      </td>
+                      <td className="py-3 px-2 font-black text-brand-primary text-sm tabular-nums text-right border-l border-slate-100 dark:border-slate-800" colSpan={5}>
+                        {date2}: {formatCurrency(totals.calc2)}
+                      </td>
+                      <td className="py-3 px-2" colSpan={1} />
                     </tr>
-                    <tr className="border-t border-slate-100 dark:border-slate-800">
-                      <td className="py-4 sm:py-6 px-3 sm:px-8 text-[11px] font-black text-green-600 dark:text-green-400 uppercase tracking-wider" colSpan={3}>{t.netProfit}</td>
-                      <td className={`py-4 sm:py-6 px-3 sm:px-8 text-right text-xs sm:text-sm font-bold tabular-nums ${totals.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{formatCurrency(totals.totalProfit)}</td>
+                    <tr className="bg-slate-100 dark:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800">
+                      <td className="py-3 sm:py-4 px-3 sm:px-6 text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider" colSpan={5}>
+                        {t.grandTotal}
+                      </td>
+                      <td className="py-3 sm:py-4 px-2 font-black text-slate-900 dark:text-white text-sm sm:text-base tabular-nums text-right border-l border-slate-100 dark:border-slate-800" colSpan={6}>
+                        {formatCurrency(totals.grand)}
+                      </td>
                     </tr>
                   </tfoot>
                 )}
@@ -156,6 +217,72 @@ export function ReportsPresenter({
           </div>
         </div>
       </div>
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="xl">
+        <Modal.Header>
+          <Modal.TitleGroup>
+            <Modal.Subtitle>{t.stockSheet}</Modal.Subtitle>
+            <Modal.Title>{t.showCalculation}</Modal.Title>
+          </Modal.TitleGroup>
+          <Modal.CloseButton onClick={() => setModalOpen(false)} />
+        </Modal.Header>
+        <Modal.Body>
+          <div className="overflow-x-auto no-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.product}</th>
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">{t.unitPrice}</th>
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">{date1} {t.uza}</th>
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">{date2} {t.uza}</th>
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">{t.subtotal}</th>
+                  <th className="py-2 px-2 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">{t.cumulative}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {rows.map((row) => {
+                  const qty1 = Number(row.uza1);
+                  const qty2 = Number(row.uza2);
+                  const amount1 = Number(row.sellingPrice) * qty1;
+                  const amount2 = Number(row.sellingPrice) * qty2;
+                  const subtotalRow = amount1 + amount2;
+                  const running = rows
+                    .slice(0, rows.indexOf(row) + 1)
+                    .reduce((sum, r) => sum + Number(r.sellingPrice) * (Number(r.uza1) + Number(r.uza2)), 0);
+                  return (
+                    <tr key={row.productId}>
+                      <td className="py-2 px-2 font-bold text-slate-900 dark:text-slate-100 text-sm whitespace-nowrap">{row.productName}</td>
+                      <td className="py-2 px-2 text-right text-sm font-semibold text-slate-500 tabular-nums">{formatCurrency(row.sellingPrice)}</td>
+                      <td className="py-2 px-2 text-right text-sm font-semibold text-slate-700 tabular-nums">{qty1.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-right text-sm font-semibold text-slate-700 tabular-nums">{qty2.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-right text-sm font-bold text-brand-primary tabular-nums">{formatCurrency(subtotalRow)}</td>
+                      <td className="py-2 px-2 text-right text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">{formatCurrency(running)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                  <td className="py-3 px-2 text-sm font-black text-slate-900 dark:text-slate-100" colSpan={4}>{t.grandTotal}</td>
+                  <td className="py-3 px-2 text-right text-sm font-black text-brand-primary tabular-nums" colSpan={2}>{formatCurrency(totals.grand)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            onClick={() => setModalOpen(false)}
+            className="w-full py-3 rounded-xl bg-gradient-brand text-white font-bold shadow-md text-sm hover:shadow-lg transition-all"
+          >
+            {t.calc}
+          </button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
+}
+
+function num(v: number | undefined | null): number {
+  return Number.isFinite(v) ? Number(v) : 0;
 }

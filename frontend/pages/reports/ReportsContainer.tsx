@@ -1,101 +1,153 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery, gql } from '@apollo/client';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProducts } from '../../hooks/useProducts';
 import { ReportsPresenter } from './ReportsPresenter';
 
-const SALES_REPORT = gql`
-  query SalesReport($startDate: String!, $endDate: String!) {
-    salesReport(startDate: $startDate, endDate: $endDate) {
-      items {
-        productId
-        productName
-        totalQuantity
-        totalRevenue
-        totalCost
-        totalProfit
-      }
-      summary {
-        totalRevenue
-        totalQuantity
-        totalProfit
-      }
-    }
-  }
-`;
+export type DateKey = 'date1' | 'date2';
 
-type PeriodType = 'today' | 'custom' | 'week' | 'month' | '3months' | '6months';
+export interface StockRow {
+  productId: string;
+  productName: string;
+  sellingPrice: number;
+  in1: number;
+  jumla1: number;
+  uza1: number;
+  baki1: number;
+  in2: number;
+  jumla2: number;
+  uza2: number;
+  baki2: number;
+}
+
+type CellField = 'in' | 'jumla' | 'uza' | 'baki';
+
+const num = (v: number): number => (Number.isFinite(v) ? v : 0);
+const clampNonNegative = (v: number): number => (Number.isFinite(v) && v >= 0 ? v : 0);
+
+function dateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export function ReportsContainer() {
-  const { lang, t } = useLanguage();
+  const { t } = useLanguage();
   const { can } = useAuth();
-  const [period, setPeriod] = useState<PeriodType>('3months');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { products, loading } = useProducts();
 
-  const dateRange = useMemo(() => {
-    let start: Date;
-    let end: Date = new Date();
-    switch (period) {
-      case 'today':
-        start = new Date(); start.setHours(0, 0, 0, 0);
-        end = new Date(); end.setHours(23, 59, 59, 999);
-        break;
-      case 'week': start = new Date(); start.setDate(start.getDate() - 7); break;
-      case 'month': start = new Date(); start.setDate(start.getDate() - 30); break;
-      case '3months': start = new Date(); start.setDate(start.getDate() - 90); break;
-      case '6months': start = new Date(); start.setDate(start.getDate() - 180); break;
-      case 'custom':
-        start = new Date(selectedDate); start.setHours(0, 0, 0, 0);
-        end = new Date(selectedDate); end.setHours(23, 59, 59, 999);
-        break;
-      default: start = new Date(); start.setDate(start.getDate() - 90);
-    }
-    return { start, end };
-  }, [period, selectedDate]);
-
-  const { loading, data } = useQuery(SALES_REPORT, {
-    variables: { startDate: dateRange.start.toISOString(), endDate: dateRange.end.toISOString() },
+  const [date1, setDate1] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return dateString(d);
   });
+  const [date2, setDate2] = useState(() => dateString(new Date()));
 
-  const reportItems = data?.salesReport?.items ?? [];
-  const reportSummary = data?.salesReport?.summary;
+  const [rows, setRows] = useState<StockRow[]>([]);
 
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm.trim()) return reportItems;
-    const query = searchTerm.toLowerCase();
-    return reportItems.filter((item: any) => item.productName.toLowerCase().includes(query));
-  }, [reportItems, searchTerm]);
+  useEffect(() => {
+    if (!products.length) {
+      setRows([]);
+      return;
+    }
+    setRows(
+      products.map((p) => ({
+        productId: p.id,
+        productName: p.name,
+        sellingPrice: clampNonNegative(Number(p.selling_price) || 0),
+        in1: 0,
+        jumla1: 0,
+        uza1: 0,
+        baki1: 0,
+        in2: 0,
+        jumla2: 0,
+        uza2: 0,
+        baki2: 0,
+      })),
+    );
+  }, [products]);
+
+  const applyDayRelation = useCallback(
+    (prev: StockRow, dateKey: DateKey, field: CellField, raw: number): StockRow => {
+      const v = num(raw);
+      const day = dateKey === 'date1' ? '1' : '2';
+      const inKey = `in${day}` as const;
+      const jumlaKey = `jumla${day}` as const;
+      const uzaKey = `uza${day}` as const;
+      const bakiKey = `baki${day}` as const;
+
+      const next = { ...prev };
+
+      if (field === 'in') {
+        next[inKey] = v;
+        if (dateKey === 'date1') {
+          next.jumla1 = num(next.in1);
+          next.baki1 = num(next.jumla1) - num(next.uza1);
+        } else {
+          next.jumla2 = num(next.in2) + num(next.baki1);
+          next.baki2 = num(next.jumla2) - num(next.uza2);
+        }
+        return next;
+      }
+
+      if (field === 'jumla') {
+        next[jumlaKey] = v;
+        next[bakiKey] = num(next[jumlaKey]) - num(next[uzaKey]);
+        return next;
+      }
+
+      if (field === 'uza') {
+        next[uzaKey] = v;
+        next[bakiKey] = num(next[jumlaKey]) - num(next[uzaKey]);
+        return next;
+      }
+
+      if (field === 'baki') {
+        next[bakiKey] = v;
+        next[uzaKey] = num(next[jumlaKey]) - num(next[bakiKey]);
+        if (dateKey === 'date2') {
+          next.jumla2 = num(next.in2) + num(next.baki1);
+        }
+        return next;
+      }
+
+      return next;
+    },
+    [],
+  );
+
+  const onCellChange = useCallback(
+    (productId: string, dateKey: DateKey, field: CellField, raw: number) => {
+      setRows((prev) => prev.map((r) => (r.productId === productId ? applyDayRelation(r, dateKey, field, raw) : r)));
+    },
+    [applyDayRelation],
+  );
+
+  const calcFor = (row: StockRow, dateKey: DateKey): number => {
+    const qty = dateKey === 'date1' ? row.uza1 : row.uza2;
+    return num(row.sellingPrice) * num(qty);
+  };
 
   const totals = useMemo(() => {
-    if (!searchTerm.trim() && reportSummary) {
-      return { totalRevenue: reportSummary.totalRevenue, totalQuantity: reportSummary.totalQuantity, totalProfit: reportSummary.totalProfit };
-    }
-    return filteredProducts.reduce(
-      (acc: any, item: any) => ({
-        totalRevenue: acc.totalRevenue + item.totalRevenue,
-        totalQuantity: acc.totalQuantity + item.totalQuantity,
-        totalProfit: acc.totalProfit + item.totalProfit,
-      }),
-      { totalRevenue: 0, totalQuantity: 0, totalProfit: 0 },
-    );
-  }, [filteredProducts, reportSummary, searchTerm]);
+    const calc1 = rows.reduce((sum, r) => sum + calcFor(r, 'date1'), 0);
+    const calc2 = rows.reduce((sum, r) => sum + calcFor(r, 'date2'), 0);
+    return { calc1, calc2, grand: calc1 + calc2 };
+  }, [rows]);
 
   if (!can('owner', 'manager')) return null;
 
   return (
     <ReportsPresenter
       t={t}
-      lang={lang}
       loading={loading}
-      filteredProducts={filteredProducts}
+      rows={rows}
+      date1={date1}
+      date2={date2}
+      onDate1Change={setDate1}
+      onDate2Change={setDate2}
+      onCellChange={onCellChange}
       totals={totals}
-      searchTerm={searchTerm}
-      onSearchChange={setSearchTerm}
-      period={period}
-      onPeriodChange={setPeriod}
-      selectedDate={selectedDate}
-      onDateChange={setSelectedDate}
     />
   );
 }
