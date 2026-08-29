@@ -24,6 +24,7 @@ interface ReportsPresenterProps {
   onNextWeek: () => void;
   onToday: () => void;
   saveStatus: SaveStatus;
+  dayLocked: boolean[];
 }
 
 function NumberCell({
@@ -159,6 +160,7 @@ export function ReportsPresenter({
   onNextWeek,
   onToday,
   saveStatus,
+  dayLocked,
 }: ReportsPresenterProps) {
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -172,11 +174,13 @@ export function ReportsPresenter({
     const d = row.days[dayIndex];
     const calc = num(row.sellingPrice) * num(d.uza);
     const field = (f: CellField) => d[f];
+    const locked = !!dayLocked[dayIndex];
     return DAY_LABEL_KEYS.map((c) => (
-      <td key={c.field} className="border border-slate-200 dark:border-slate-700/80 p-0">
+      <td key={c.field} className={cn('border border-slate-200 dark:border-slate-700/80 p-0', locked && 'bg-slate-50/60 dark:bg-slate-800/30')}>
         <NumberCell
           value={field(c.field)}
-          onChange={(v) => onCellChange(row.productId, dayIndex, c.field, v)}
+          readOnly={locked}
+          onChange={locked ? undefined : (v) => onCellChange(row.productId, dayIndex, c.field, v)}
         />
       </td>
     )).concat(
