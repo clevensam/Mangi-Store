@@ -1,8 +1,19 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useQuery, gql } from '@apollo/client';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ReportsPresenter } from './ReportsPresenter';
+
+const WEEK_SALES = gql`
+  query WeekSales($startDate: String!, $endDate: String!) {
+    sales(startDate: $startDate, endDate: $endDate) {
+      product_id
+      quantity
+      created_at
+    }
+  }
+`;
 
 export interface DaySlot {
   in: number;
@@ -110,9 +121,40 @@ export function ReportsContainer() {
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   // in-memory per-week sheets, keyed by Monday ISO
   const [sheets, setSheets] = useState<Record<string, Record<string, StockRow>>>({});
+  // weeks that have had DB-sourced UZA merged in (so we don't overwrite edits)
+  const [dbLoadedWeeks, setDbLoadedWeeks] = useState<Record<string, boolean>>({});
 
   const weekKey = dateISO(weekStart);
   const days = useMemo(() => buildWeekDays(weekStart), [weekStart]);
+
+  // DB sales range: Monday 00:00 -> Sunday 23:59 (local)
+  const saleQuery = useMemo(() => {
+    const start = new Date(weekStart);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { startDate: start.toISOString(), endDate: end.toISOString() };
+  }, [weekStart]);
+
+  const { data: salesData, loading: salesLoading } = useQuery(WEEK_SALES, {
+    variables: saleQuery,
+  });
+
+  // map productId -> uza[7] from DB sales for the current week
+  const weekSales = useMemo(() => {
+    const map: Record<string, number[]> = {};
+    const byIso: Record<string, number> = {};
+    days.forEach((d, i) => (byIso[d.iso] = i));
+    (salesData?.sales ?? []).forEach((s: any) => {
+      const iso = dateISO(new Date(s.created_at));
+      const dayIdx = byIso[iso];
+      if (dayIdx === undefined) return;
+      if (!map[s.product_id]) map[s.product_id] = [0, 0, 0, 0, 0, 0, 0];
+      map[s.product_id][dayIdx] += num(s.quantity);
+    });
+    return map;
+  }, [salesData, days]);
 
   // seed current week sheet when products load / week changes
   useEffect(() => {
@@ -126,6 +168,36 @@ export function ReportsContainer() {
       return { ...prev, [weekKey]: map };
     });
   }, [products, weekKey]);
+
+  // merge DB-sourced UZA into the week sheet once sales load (skip if already merged / user edited)
+  useEffect(() => {
+    if (salesLoading || !Object.keys(weekSales).length) return;
+    if (dbLoadedWeeks[weekKey]) return;
+    setSheets((prev) => {
+      const existing = prev[weekKey];
+      if (!existing) return prev;
+      const map: Record<string, StockRow> = {};
+      let changed = false;
+      for (const pid of Object.keys(existing)) {
+        const row = existing[pid];
+        const uzaArr = weekSales[pid];
+        if (!uzaArr) {
+          map[pid] = row;
+          continue;
+        }
+        const newDays = row.days.map((d, i) => {
+          const uza = num(uzaArr[i] ?? 0);
+          if (uza === num(d.uza)) return d;
+          return { ...d, uza, baki: num(d.jumla) - uza };
+        });
+        map[pid] = { ...row, days: newDays };
+        changed = true;
+      }
+      if (!changed) return prev;
+      return { ...prev, [weekKey]: map };
+    });
+    setDbLoadedWeeks((prev) => ({ ...prev, [weekKey]: true }));
+  }, [salesLoading, weekSales, weekKey, dbLoadedWeeks]);
 
   const rows: StockRow[] = useMemo(() => {
     const map = sheets[weekKey];
@@ -183,7 +255,7 @@ export function ReportsContainer() {
   return (
     <ReportsPresenter
       t={t}
-      loading={loading}
+      loading={loading || salesLoading}
       rows={rows}
       days={days}
       weekLabel={weekLabel(days)}
