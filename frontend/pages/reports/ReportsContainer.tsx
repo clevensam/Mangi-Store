@@ -308,9 +308,11 @@ export function ReportsContainer() {
   const goNextWeek = useCallback(() => {
     flushPending();
     setWeekStart((s) => {
-      const x = new Date(s);
-      x.setDate(x.getDate() + 7);
-      return x;
+      const next = new Date(s);
+      next.setDate(next.getDate() + 7);
+      // Allow navigating up to the current week only (no future weeks).
+      const currentMonday = mondayOf(new Date());
+      return next > currentMonday ? currentMonday : next;
     });
   }, [flushPending]);
 
@@ -326,6 +328,10 @@ export function ReportsContainer() {
     [days, todayStart],
   );
 
+  // Navigation is limited to the current week and past weeks only.
+  const currentMonday = mondayOf(new Date());
+  const canGoNext = weekStart < currentMonday;
+
   if (!can('owner', 'manager')) return null;
 
   return (
@@ -339,6 +345,7 @@ export function ReportsContainer() {
       totals={totals}
       onPrevWeek={goPrevWeek}
       onNextWeek={goNextWeek}
+      canGoNext={canGoNext}
       onToday={goToday}
       saveStatus={saveStatus}
       dayLocked={dayLocked}

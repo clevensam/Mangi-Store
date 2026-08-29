@@ -22,6 +22,7 @@ interface ReportsPresenterProps {
   totals: { perDay: number[]; grand: number };
   onPrevWeek: () => void;
   onNextWeek: () => void;
+  canGoNext: boolean;
   onToday: () => void;
   saveStatus: SaveStatus;
   dayLocked: boolean[];
@@ -158,6 +159,7 @@ export function ReportsPresenter({
   totals,
   onPrevWeek,
   onNextWeek,
+  canGoNext,
   onToday,
   saveStatus,
   dayLocked,
@@ -238,7 +240,13 @@ export function ReportsPresenter({
               <button
                 onClick={onNextWeek}
                 title={t.nextWeek}
-                className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                disabled={!canGoNext}
+                className={cn(
+                  'p-2.5 rounded-xl border transition-colors',
+                  canGoNext
+                    ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed',
+                )}
               >
                 <ChevronRight size={18} />
               </button>
