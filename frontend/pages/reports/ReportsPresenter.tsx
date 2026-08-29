@@ -145,8 +145,8 @@ export function ReportsPresenter({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="mx-auto w-full max-w-[880px]">
+      <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="mx-auto w-full max-w-[1280px]">
           <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <table className="w-max text-left border-collapse">
               <thead>
