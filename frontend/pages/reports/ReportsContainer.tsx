@@ -146,6 +146,22 @@ export function ReportsContainer() {
   const weekKey = dateISO(weekStart);
   const days = useMemo(() => buildWeekDays(weekStart), [weekStart]);
 
+  // Auto-navigate to the new current week when the week rolls over (Monday 00:00),
+  // but only if the user is parked on the week that just ended (now a past week).
+  useEffect(() => {
+    const check = () => {
+      const newMonday = mondayOf(new Date());
+      setWeekStart((s) => {
+        const prevMonday = new Date(newMonday);
+        prevMonday.setDate(newMonday.getDate() - 7);
+        return dateISO(s) === dateISO(prevMonday) ? newMonday : s;
+      });
+    };
+    check();
+    const id = setInterval(check, 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const sheetsRef = useRef(sheets);
   sheetsRef.current = sheets;
 
