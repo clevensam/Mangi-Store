@@ -54,7 +54,8 @@ export function SalesContainer() {
     if (cart.items.length === 0) return;
 
     try {
-      for (const item of cart.items) {
+      for (let i = 0; i < cart.items.length; i++) {
+        const item = cart.items[i];
         const product = products.find((p) => p.id === item.productId);
         if (product && item.quantity > product.quantity) {
           toast.error(
@@ -65,7 +66,8 @@ export function SalesContainer() {
           return;
         }
         const total = item.price * item.quantity;
-        await recordSale(item.productId, item.quantity, total);
+        // First line of a checkout records the Order (checkout count); the rest just add line items.
+        await recordSale(item.productId, item.quantity, total, i === 0);
       }
 
       orderNumberCounter++;
