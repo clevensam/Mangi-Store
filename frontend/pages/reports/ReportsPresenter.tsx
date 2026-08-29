@@ -44,7 +44,7 @@ function NumberCell({
       readOnly={readOnly}
       onChange={(e) => onChange && onChange(e.target.value === '' ? NaN : e.target.valueAsNumber)}
       className={cn(
-        'w-full min-w-[52px] bg-transparent px-1.5 py-1.5 text-right text-xs sm:text-sm font-semibold tabular-nums focus:outline-none focus:bg-brand-primary/5 transition-colors rounded',
+        'w-[46px] min-w-[46px] max-w-[46px] bg-transparent px-0 py-1.5 text-right text-xs sm:text-sm font-semibold tabular-nums focus:outline-none focus:bg-brand-primary/5 transition-colors rounded',
         readOnly
           ? 'text-brand-primary dark:text-orange-300 font-bold cursor-default'
           : 'text-slate-900 dark:text-slate-100',
@@ -146,9 +146,9 @@ export function ReportsPresenter({
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-auto no-scrollbar px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="min-w-[1150px] max-w-full mx-auto">
+        <div className="mx-auto w-full max-w-[880px]">
           <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <table className="w-full text-left border-collapse">
+            <table className="w-max text-left border-collapse">
               <thead>
                 <tr>
                   <th
