@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Calculator, ChevronLeft, ChevronRight, FileText, RefreshCw } from 'lucide-react';
 import { formatCurrency, cn } from '../../lib/utils';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -55,6 +55,94 @@ function NumberCell({
 
 const STICKY = 'sticky left-0 z-20';
 
+function CustomScrollBar({ targetRef }: { targetRef: React.RefObject<HTMLDivElement | null> }) {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [thumb, setThumb] = useState({ left: 0, width: 0, visible: false });
+  const [dragging, setDragging] = useState(false);
+
+  const update = useCallback(() => {
+    const el = targetRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const vis = max > 0;
+    const trackW = trackRef.current ? trackRef.current.clientWidth : 0;
+    const w = vis && trackW > 0 ? Math.max(40, (el.clientWidth / el.scrollWidth) * trackW) : 0;
+    const left = vis && max > 0 ? (el.scrollLeft / max) * (trackW - w) : 0;
+    setThumb({ left, width: w, visible: vis });
+  }, [targetRef]);
+
+  useEffect(() => {
+    const el = targetRef.current;
+    if (!el) return;
+    update();
+    const onScroll = () => update();
+    el.addEventListener('scroll', onScroll);
+    window.addEventListener('resize', onScroll);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onScroll) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      ro?.disconnect();
+    };
+  }, [targetRef, update]);
+
+  const jumpTo = (e: React.PointerEvent) => {
+    const el = targetRef.current;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const trackW = track.clientWidth;
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / trackW));
+    el.scrollLeft = ratio * max;
+  };
+
+  const startDrag = (e: React.PointerEvent) => {
+    const el = targetRef.current;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    e.preventDefault();
+    setDragging(true);
+    const startX = e.clientX;
+    const startLeft = el.scrollLeft;
+    const move = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const max = el.scrollWidth - el.clientWidth;
+      const trackW = track.clientWidth;
+      const w = thumb.width;
+      const scale = max / (trackW - w);
+      el.scrollLeft = startLeft + dx * scale;
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  if (!thumb.visible) return null;
+
+  return (
+    <div
+      ref={trackRef}
+      onPointerDown={jumpTo}
+      className="h-3.5 flex items-center px-1 cursor-pointer select-none bg-slate-100 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700"
+    >
+      <div
+        onPointerDown={startDrag}
+        style={{ left: thumb.left, width: thumb.width }}
+        className={cn(
+          'relative h-1.5 rounded-full transition-colors',
+          dragging ? 'bg-brand-primary' : 'bg-slate-400 dark:bg-slate-500 hover:bg-brand-primary',
+        )}
+      />
+    </div>
+  );
+}
+
 export function ReportsPresenter({
   t,
   loading,
@@ -68,6 +156,7 @@ export function ReportsPresenter({
   onToday,
 }: ReportsPresenterProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
 
   if (loading) {
     return <div className="flex-1 flex items-center justify-center p-8"><LoadingSpinner /></div>;
@@ -148,7 +237,7 @@ export function ReportsPresenter({
       <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 pb-8">
         <div className="mx-auto w-full max-w-[1280px]">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto custom-scrollbar">
+            <div ref={tableScrollRef} className="overflow-x-auto no-scrollbar">
             <table className="w-max text-left border-collapse">
               <thead>
                 <tr>
@@ -259,6 +348,7 @@ export function ReportsPresenter({
               )}
             </table>
             </div>
+            <CustomScrollBar targetRef={tableScrollRef} />
           </div>
         </div>
       </div>
