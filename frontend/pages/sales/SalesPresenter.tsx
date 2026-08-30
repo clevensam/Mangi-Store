@@ -10,11 +10,11 @@ import { cn } from '../../lib/utils';
 import { formatCurrency } from '../../lib/utils';
 import { type Language, translations } from '../../lib/i18n';
 import { type Product } from './SalesContainer';
-import { type CartItem } from '../../hooks/useCart';
+import { type CartLine } from '../../hooks/useCart';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface CartReturn {
-  items: CartItem[];
+  items: CartLine[];
   addItem: (product: { id: string; name: string; category: string; selling_price: number }, qty?: number) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;

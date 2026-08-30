@@ -1,16 +1,19 @@
 import { useState, useCallback, useMemo } from 'react';
+import {
+  addLine,
+  removeLine,
+  updateLineQuantity,
+  itemCount,
+  subtotalOf,
+  taxOf,
+  totalOf,
+} from '../lib/cart';
+import type { CartLine } from '../lib/cart';
 
-export interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
-}
+export type { CartLine };
 
 interface UseCartReturn {
-  items: CartItem[];
+  items: CartLine[];
   addItem: (product: { id: string; name: string; category: string; selling_price: number }, qty?: number) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -30,46 +33,26 @@ interface UseCartReturn {
 let cartIdCounter = 0;
 
 export function useCart(): UseCartReturn {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartLine[]>([]);
   const [discount, setDiscount] = useState(0);
   const [serviceCharge, setServiceCharge] = useState(0);
   const [taxRate, setTaxRate] = useState(0);
 
   const addItem = useCallback(
     (product: { id: string; name: string; category: string; selling_price: number }, qty = 1) => {
-      setItems((prev) => {
-        const existing = prev.find((i) => i.productId === product.id);
-        if (existing) {
-          return prev.map((i) =>
-            i.productId === product.id ? { ...i, quantity: i.quantity + qty } : i,
-          );
-        }
-        return [
-          ...prev,
-          {
-            id: `cart-${++cartIdCounter}`,
-            productId: product.id,
-            name: product.name,
-            category: product.category,
-            price: product.selling_price,
-            quantity: qty,
-          },
-        ];
-      });
+      setItems((prev) =>
+        addLine(prev, product, qty, () => `cart-${++cartIdCounter}`),
+      );
     },
     [],
   );
 
   const removeItem = useCallback((cartItemId: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== cartItemId));
+    setItems((prev) => removeLine(prev, cartItemId));
   }, []);
 
   const updateQuantity = useCallback((cartItemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setItems((prev) => prev.filter((i) => i.id !== cartItemId));
-      return;
-    }
-    setItems((prev) => prev.map((i) => (i.id === cartItemId ? { ...i, quantity } : i)));
+    setItems((prev) => updateLineQuantity(prev, cartItemId, quantity));
   }, []);
 
   const clearCart = useCallback(() => {
@@ -79,16 +62,13 @@ export function useCart(): UseCartReturn {
     setTaxRate(0);
   }, []);
 
-  const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
+  const itemCount = useMemo(() => itemCount(items), [items]);
 
-  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
+  const subtotal = useMemo(() => subtotalOf(items), [items]);
 
-  const tax = useMemo(() => {
-    const taxableAmount = subtotal - discount + serviceCharge;
-    return Math.max(0, taxableAmount * (taxRate / 100));
-  }, [subtotal, discount, serviceCharge, taxRate]);
+  const tax = useMemo(() => taxOf({ subtotal, discount, serviceCharge, taxRate }), [subtotal, discount, serviceCharge, taxRate]);
 
-  const total = useMemo(() => subtotal - discount + serviceCharge + tax, [subtotal, discount, serviceCharge, tax]);
+  const total = useMemo(() => totalOf({ subtotal, discount, serviceCharge, taxRate }), [subtotal, discount, serviceCharge, taxRate]);
 
   return {
     items,

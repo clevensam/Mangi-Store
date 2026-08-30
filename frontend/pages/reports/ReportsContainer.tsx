@@ -21,7 +21,14 @@ const STOCK_SHEET = gql`
 
 const SAVE_STOCK_SHEET = gql`
   mutation SaveStockSheet($weekDate: String!, $entries: [StockEntryInput!]!) {
-    saveStockSheet(weekDate: $weekDate, entries: $entries)
+    saveStockSheet(weekDate: $weekDate, entries: $entries) {
+      productId
+      weekday
+      in
+      jumla
+      uza
+      baki
+    }
   }
 `;
 
@@ -100,35 +107,6 @@ function emptyStockRow(p: { id: string; name: string; selling_price?: number | n
     sellingPrice: num(Number(p.selling_price) || 0),
     days: buildEmptyDays(),
   };
-}
-
-function applyEdit(days: DaySlot[], i: number, field: CellField, raw: number): DaySlot[] {
-  const v = Math.max(0, num(raw));
-  const next = days.map((d) => ({ ...d }));
-  const d = next[i];
-
-  if (field === 'in') {
-    d.in = v;
-    d.jumla = v + (i > 0 ? num(next[i - 1].baki) : 0);
-    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
-  } else if (field === 'uza') {
-    d.uza = v;
-    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
-  } else if (field === 'baki') {
-    d.baki = v;
-    d.uza = Math.max(0, num(d.jumla) - num(d.baki));
-  } else if (field === 'jumla') {
-    d.jumla = v;
-    d.baki = Math.max(0, num(d.jumla) - num(d.uza));
-  }
-
-  // cascade forward: jumla[i+1] = in[i+1] + baki[i]
-  for (let j = i + 1; j < 7; j++) {
-    next[j].jumla = Math.max(0, num(next[j].in) + num(next[j - 1].baki));
-    next[j].baki = Math.max(0, num(next[j].jumla) - num(next[j].uza));
-  }
-
-  return next;
 }
 
 export function ReportsContainer() {
@@ -244,21 +222,45 @@ export function ReportsContainer() {
     (key: string) => {
       const map = sheetsRef.current[key];
       if (!map) return;
+      // Send only the raw inputs (in/uza); the backend recomputes jumla/baki
+      // (single source of truth) and returns the canonical week.
       const entries = Object.values(map).flatMap((row) =>
         row.days.map((d, i) => ({
           productId: row.productId,
           weekday: i,
           in: num(d.in),
-          jumla: num(d.jumla),
           uza: num(d.uza),
+          jumla: num(d.jumla),
           baki: num(d.baki),
         })),
       );
       setSaveStatus('saving');
       saveStockSheet({ variables: { weekDate: key, entries } })
-        .then(() => {
+        .then(({ data }) => {
           savedWeekRef.current = key;
           setSaveStatus('saved');
+          // Apply the backend-computed jumla/baki back to the local sheet so the
+          // UI reflects the canonical values.
+          const returned = data?.saveStockSheet ?? [];
+          if (returned.length) {
+            setSheets((prev) => {
+              const weekMap = { ...(prev[key] || {}) };
+              returned.forEach((e: any) => {
+                const row = weekMap[e.productId];
+                if (!row) return;
+                const days = row.days.map((d) => ({ ...d }));
+                const i = Math.min(6, Math.max(0, e.weekday));
+                days[i] = {
+                  in: num(e.in),
+                  jumla: num(e.jumla),
+                  uza: num(e.uza),
+                  baki: num(e.baki),
+                };
+                weekMap[e.productId] = { ...row, days };
+              });
+              return { ...prev, [key]: weekMap };
+            });
+          }
         })
         .catch(() => {
           setSaveStatus('error');
@@ -281,17 +283,21 @@ export function ReportsContainer() {
   const onCellChange = useCallback(
     (productId: string, dayIndex: number, field: CellField, raw: number) => {
       const key = weekKey;
+      // Only raw inputs (in/uza) are editable here; jumla/baki are computed
+      // server-side and cannot be edited (see ReportsPresenter readOnly).
+      if (field !== 'in' && field !== 'uza') return;
+
       setSheets((prev) => {
         const map = { ...(prev[key] || {}) };
         const row = map[productId]
           ? { ...map[productId], days: map[productId].days.map((d) => ({ ...d })) }
           : emptyStockRow({ id: productId, name: '', selling_price: 0 });
-        row.days = applyEdit(row.days, dayIndex, field, raw);
+        row.days[dayIndex] = { ...row.days[dayIndex], [field]: Math.max(0, num(raw)) };
         map[productId] = row;
         return { ...prev, [key]: map };
       });
 
-      // Debounced auto-save
+      // Debounced auto-save; backend returns the recomputed jumla/baki.
       setSaveStatus('idle');
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => persist(key), SAVE_DEBOUNCE_MS);

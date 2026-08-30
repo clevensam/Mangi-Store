@@ -5,11 +5,11 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import type { StockRow, WeekDay, CellField, SaveStatus } from './ReportsContainer';
 
 const WEEKDAY_KEY = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-const DAY_LABEL_KEYS: { field: CellField }[] = [
+const DAY_LABEL_KEYS: { field: CellField; readOnly?: boolean }[] = [
   { field: 'in' },
-  { field: 'jumla' },
+  { field: 'jumla', readOnly: true },
   { field: 'uza' },
-  { field: 'baki' },
+  { field: 'baki', readOnly: true },
 ];
 
 interface ReportsPresenterProps {
@@ -181,8 +181,8 @@ export function ReportsPresenter({
       <td key={c.field} className={cn('border border-slate-200 dark:border-slate-700/80 p-0', locked && 'bg-slate-50/60 dark:bg-slate-800/30')}>
         <NumberCell
           value={field(c.field)}
-          readOnly={locked}
-          onChange={locked ? undefined : (v) => onCellChange(row.productId, dayIndex, c.field, v)}
+          readOnly={locked || c.readOnly}
+          onChange={locked || c.readOnly ? undefined : (v) => onCellChange(row.productId, dayIndex, c.field, v)}
         />
       </td>
     )).concat(
