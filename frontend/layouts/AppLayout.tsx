@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { translations, type Language } from '../lib/i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const SalesContainer = React.lazy(() =>
   import('../pages/sales/SalesContainer').then((m) => ({ default: m.SalesContainer })),
@@ -412,7 +413,7 @@ export function AppLayout() {
                 <Suspense
                   fallback={
                     <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <LoadingSpinner size={48} thickness={200} />
                     </div>
                   }
                 >
