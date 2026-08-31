@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Package, Receipt, ChevronLeft, ChevronRight,
@@ -11,17 +11,18 @@ import { cn } from '../lib/utils';
 import { translations, type Language } from '../lib/i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { SalesContainer } from '../pages/sales/SalesContainer';
-import { DashboardContainer } from '../pages/dashboard/DashboardContainer';
-import { ProductsContainer } from '../pages/products/ProductsContainer';
-import { CustomersContainer } from '../pages/customers/CustomersContainer';
-import { ExpensesContainer } from '../pages/expenses/ExpensesContainer';
-import { StockContainer } from '../pages/stock/StockContainer';
-import { ReportsContainer } from '../pages/reports/ReportsContainer';
-import { DebtsContainer } from '../pages/debts/DebtsContainer';
-import { AnalysisContainer } from '../pages/analysis/AnalysisContainer';
-import { SettingsContainer } from '../pages/settings/SettingsContainer';
-import { ProductDetailsContainer } from '../pages/productdetails/ProductDetailsContainer';
+
+const SalesContainer = React.lazy(() => import('../pages/sales/SalesContainer'));
+const DashboardContainer = React.lazy(() => import('../pages/dashboard/DashboardContainer'));
+const ProductsContainer = React.lazy(() => import('../pages/products/ProductsContainer'));
+const CustomersContainer = React.lazy(() => import('../pages/customers/CustomersContainer'));
+const ExpensesContainer = React.lazy(() => import('../pages/expenses/ExpensesContainer'));
+const StockContainer = React.lazy(() => import('../pages/stock/StockContainer'));
+const ReportsContainer = React.lazy(() => import('../pages/reports/ReportsContainer'));
+const DebtsContainer = React.lazy(() => import('../pages/debts/DebtsContainer'));
+const AnalysisContainer = React.lazy(() => import('../pages/analysis/AnalysisContainer'));
+const SettingsContainer = React.lazy(() => import('../pages/settings/SettingsContainer'));
+const ProductDetailsContainer = React.lazy(() => import('../pages/productdetails/ProductDetailsContainer'));
 
 export function AppLayout() {
   const { user, profile, can, signOut } = useAuth();
@@ -386,7 +387,15 @@ export function AppLayout() {
                 transition={{ duration: 0.2 }}
                 className="h-full"
               >
-                {renderPage()}
+                <Suspense
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  }
+                >
+                  {renderPage()}
+                </Suspense>
               </motion.div>
             </AnimatePresence>
           </div>

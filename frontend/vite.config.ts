@@ -20,6 +20,29 @@ export default defineConfig(({mode}) => {
     build: {
       outDir: '../dist',
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('recharts') || id.includes('d3-')) {
+                return 'vendor-charts';
+              }
+              if (
+                id.includes('react') || id.includes('react-dom') ||
+                id.includes('react-router') || id.includes('scheduler') ||
+                id.includes('@apollo') || id.includes('graphql') ||
+                id.includes('zen-observable') || id.includes('symbol-observable') ||
+                id.includes('motion') || id.includes('lucide-react') ||
+                id.includes('date-fns') || id.includes('clsx') ||
+                id.includes('tailwind-merge') || id.includes('sonner') ||
+                id.includes('tw-animate') || id.includes('class-variance')
+              ) {
+                return 'vendor-core';
+              }
+            }
+          },
+        },
+      },
     },
     server: {
       port: 5173,
